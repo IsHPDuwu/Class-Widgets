@@ -463,6 +463,10 @@ def check_fullscreen():  # 检查是否全屏
 
 class ErrorDialog(Dialog):  # 重大错误提示框
     def __init__(self, error_details='Traceback (most recent call last):', parent=None):
+        # KeyboardInterrupt 直接 exit
+        if len(error_details) > 18 and error_details[-18:-1] == 'KeyboardInterrupt':
+            sys.exit(0)
+        
         super().__init__(
             'Class Widgets 崩溃报告',
             '抱歉！Class Widgets 发生了严重的错误从而无法正常运行。您可以保存下方的错误信息并向他人求助。'
