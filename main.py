@@ -464,7 +464,7 @@ def check_fullscreen():  # 检查是否全屏
 class ErrorDialog(Dialog):  # 重大错误提示框
     def __init__(self, error_details='Traceback (most recent call last):', parent=None):
         # KeyboardInterrupt 直接 exit
-        if len(error_details) > 18 and error_details[-18:-1] == 'KeyboardInterrupt':
+        if error_details.endswith('KeyboardInterrupt') or error_details.endswith('KeyboardInterrupt\n'):
             sys.exit(0)
         
         super().__init__(
