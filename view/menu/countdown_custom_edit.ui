@@ -53,7 +53,7 @@
       <number>12</number>
      </property>
      <item>
-      <widget class="ListWidget" name="schedule_list">
+      <widget class="ListWidget" name="conutdown_list">
        <property name="sizePolicy">
         <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
          <horstretch>0</horstretch>
@@ -92,7 +92,7 @@
       </widget>
      </item>
      <item>
-      <widget class="LineEdit" name="LineEdit">
+      <widget class="LineEdit" name="text_cd">
        <property name="sizePolicy">
         <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
          <horstretch>0</horstretch>
@@ -134,10 +134,13 @@
       </widget>
      </item>
      <item>
-      <widget class="ToolButton" name="set_button"/>
+      <widget class="ToolButton" name="add_button_cd"/>
      </item>
      <item>
-      <widget class="ToolButton" name="clear_button"/>
+      <widget class="ToolButton" name="set_button_cd"/>
+     </item>
+     <item>
+      <widget class="ToolButton" name="clear_button_cd"/>
      </item>
     </layout>
    </item>
@@ -160,7 +163,7 @@
       </spacer>
      </item>
      <item>
-      <widget class="PrimaryPushButton" name="save_schedule">
+      <widget class="PrimaryPushButton" name="save_conutdown">
        <property name="sizePolicy">
         <sizepolicy hsizetype="Fixed" vsizetype="Minimum">
          <horstretch>0</horstretch>

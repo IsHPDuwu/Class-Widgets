@@ -60,6 +60,8 @@ schedule_even_dict = {}  # 对应时间线的课程表（双周）
 
 timeline_dict = {}  # 时间线字典
 
+countdown_dict = {}
+
 
 def open_plaza():
     global plugin_plaza
@@ -182,6 +184,14 @@ def se_load_item():
     schedule_dict = load_schedule_dict(schedule, part, part_name)
     schedule_even_dict = load_schedule_dict(schedule_even, part, part_name)
 
+def cd_load_item():
+    global countdown_dict
+    text = config_center.read_conf('Date','cd_text_custom').split(',')
+    date = config_center.read_conf('Date','countdown_date').split(',')
+    if len(text) != len(date):
+        countdown_dict = {"Err": f"len(cd_text_custom) (={len(text)}) != len(countdown_date) (={len(date)})"}
+        raise Exception(f"len(cd_text_custom) (={len(text)}) != len(countdown_date) (={len(date)})"f"len(cd_text_custom) (={len(text)}) != len(countdown_date) (={len(date)}) \n 请检查 config.ini [Date] 项！！")
+    countdown_dict = dict(zip(date, text))
 
 class selectCity(MessageBoxBase):  # 选择城市
     def __init__(self, parent=None):
@@ -519,6 +529,7 @@ class SettingsMenu(FluentWindow):
         self.setup_sound_interface()
         self.setup_help_interface()
         self.setup_plugin_mgr_interface()
+        self.setup_countdown_edit()
 
     # 初始化界面
     def setup_plugin_mgr_interface(self):
@@ -1917,6 +1928,40 @@ class SettingsMenu(FluentWindow):
             selected_item.setText(
                 f'未添加-{name_list[1]}'
             )
+
+    def cd_edit_item(self):
+        ...
+
+    def cd_delete_item(self):
+        ...
+
+    def cd_add_item(self):
+        ...
+
+    def setup_countdown_edit(self):
+        cd_load_item()
+        logger.debug(f"{countdown_dict}")
+        cd_set_button = self.findChild(ToolButton, 'set_button_cd')
+        cd_set_button.setIcon(fIcon.EDIT)
+        cd_set_button.setToolTip('编辑自定义倒计时')
+        cd_set_button.installEventFilter(ToolTipFilter(cd_set_button, showDelay=300, position=ToolTipPosition.TOP))
+        cd_set_button.clicked.connect(self.cd_edit_item)
+
+        cd_clear_button = self.findChild(ToolButton, 'clear_button_cd')
+        cd_clear_button.setIcon(fIcon.DELETE)
+        cd_clear_button.setToolTip('删除自定义倒计时')
+        cd_clear_button.installEventFilter(ToolTipFilter(cd_clear_button, showDelay=300, position=ToolTipPosition.TOP))
+        cd_clear_button.clicked.connect(self.cd_delete_item)
+
+        cd_add_button = self.findChild(ToolButton, 'add_button_cd')
+        cd_add_button.setIcon(fIcon.ADD)
+        cd_add_button.setToolTip('添加自定义倒计时')
+        cd_add_button.installEventFilter(ToolTipFilter(cd_add_button, showDelay=300, position=ToolTipPosition.TOP))
+        cd_add_button.clicked.connect(self.cd_add_item)
+
+        cd_schedule_list = self.findChild(ListWidget, 'countdown_list')
+        cd_schedule_list.addItems([f"{date}-{countdown_dict[date]}" for date in countdown_dict])
+        
 
     def m_start_time_changed(self):
         global morning_st
