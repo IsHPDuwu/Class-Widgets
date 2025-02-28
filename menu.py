@@ -483,6 +483,8 @@ class SettingsMenu(FluentWindow):
         self.teInterface.setObjectName("teInterface")
         self.seInterface = uic.loadUi(f'{base_directory}/view/menu/schedule_edit.ui')  # 课程表编辑
         self.seInterface.setObjectName("seInterface")
+        self.cdInterface = uic.loadUi(f'{base_directory}/view/menu/countdown_custom_edit.ui') # 自定义倒计时编辑
+        self.cdInterface.setObjectName("cdInterface")
         self.adInterface = uic.loadUi(f'{base_directory}/view/menu/advance.ui')  # 高级选项
         self.adInterface.setObjectName("adInterface")
         self.ifInterface = uic.loadUi(f'{base_directory}/view/menu/about.ui')  # 关于
@@ -662,18 +664,18 @@ class SettingsMenu(FluentWindow):
         save_config_button = self.findChild(PrimaryPushButton, 'save_config')
         save_config_button.clicked.connect(self.ct_save_widget_config)
 
-        set_wcc_title = self.findChild(LineEdit, 'set_wcc_title')  # 倒计时标题
-        set_wcc_title.setText(config_center.read_conf('Date', 'cd_text_custom'))
-        set_wcc_title.textChanged.connect(
-            lambda: config_center.write_conf('Date', 'cd_text_custom', set_wcc_title.text()))
+        # set_wcc_title = self.findChild(LineEdit, 'set_wcc_title')  # 倒计时标题
+        # set_wcc_title.setText(config_center.read_conf('Date', 'cd_text_custom'))
+        # set_wcc_title.textChanged.connect(
+        #     lambda: config_center.write_conf('Date', 'cd_text_custom', set_wcc_title.text()))
 
-        set_countdown_date = self.findChild(CalendarPicker, 'set_countdown_date')  # 倒计时日期
-        if config_center.read_conf('Date', 'countdown_date') != '':
-            set_countdown_date.setDate(QDate.fromString(config_center.read_conf('Date', 'countdown_date'), 'yyyy-M-d'))
-        set_countdown_date.dateChanged.connect(
-            lambda: config_center.write_conf(
-                'Date', 'countdown_date', set_countdown_date.date.toString('yyyy-M-d'))
-        )
+        # set_countdown_date = self.findChild(CalendarPicker, 'set_countdown_date')  # 倒计时日期
+        # if config_center.read_conf('Date', 'countdown_date') != '':
+        #     set_countdown_date.setDate(QDate.fromString(config_center.read_conf('Date', 'countdown_date'), 'yyyy-M-d'))
+        # set_countdown_date.dateChanged.connect(
+        #     lambda: config_center.write_conf(
+        #         'Date', 'countdown_date', set_countdown_date.date.toString('yyyy-M-d'))
+        # )
 
         set_ac_color = self.findChild(PushButton, 'set_ac_color')  # 主题色
         set_ac_color.clicked.connect(self.ct_set_ac_color)
@@ -1936,6 +1938,7 @@ class SettingsMenu(FluentWindow):
         self.addSubInterface(self.spInterface, fIcon.HOME, '课表预览')
         self.addSubInterface(self.teInterface, fIcon.DATE_TIME, '时间线编辑')
         self.addSubInterface(self.seInterface, fIcon.EDUCATION, '课程表编辑')
+        self.addSubInterface(self.cdInterface, fIcon.EDUCATION, '自定义倒计时编辑')
         self.addSubInterface(self.cfInterface, fIcon.FOLDER, '配置文件')
         self.navigationInterface.addSeparator()
         self.addSubInterface(self.hdInterface, fIcon.QUESTION, '帮助')
