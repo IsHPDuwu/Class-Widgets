@@ -1938,6 +1938,9 @@ class SettingsMenu(FluentWindow):
     def cd_add_item(self):
         ...
 
+    def cd_save_item(self):
+        ...
+
     def setup_countdown_edit(self):
         cd_load_item()
         logger.debug(f"{countdown_dict}")
@@ -1962,6 +1965,8 @@ class SettingsMenu(FluentWindow):
         cd_schedule_list = self.findChild(ListWidget, 'countdown_list')
         cd_schedule_list.addItems([f"{date}-{countdown_dict[date]}" for date in countdown_dict])
         
+        cd_save_button = self.findChild(PrimaryPushButton, 'save_countdown')
+        cd_save_button.clicked.connect(self.cd_save_item)
 
     def m_start_time_changed(self):
         global morning_st
