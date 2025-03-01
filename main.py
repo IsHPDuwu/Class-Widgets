@@ -1501,7 +1501,8 @@ class DesktopWidget(QWidget):  # 主要小组件
                 self.countdown_progress_bar.setValue(cd_list[2])
 
         if path == 'widget-countdown-custom.ui':  # 自定义倒计时
-            self.custom_title.setText(f'距离 {config_center.read_conf("Date", "cd_text_custom")} 还有')
+            conf.update_countdown()
+            self.custom_title.setText(f'距离 {conf.get_cd_text_custom()} 还有')
             self.custom_countdown.setText(conf.get_custom_countdown())
         self.update()
 
