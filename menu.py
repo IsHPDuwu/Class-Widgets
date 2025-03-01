@@ -1930,16 +1930,55 @@ class SettingsMenu(FluentWindow):
             )
 
     def cd_edit_item(self):
-        ...
+        cd_countdown_list = self.findChild(ListWidget, 'countdown_list')
+        cd_text_cd = self.findChild(LineEdit, 'text_cd')
+        cd_set_countdown_date = self.findChild(CalendarPicker, 'set_countdown_date')
+        selected_items = cd_countdown_list.selectedItems()
+        if selected_items:
+            selected_item = selected_items[0]
+            selected_item.setText(
+                f'{cd_set_countdown_date.text().replace('/', '-')}--{cd_text_cd.text()}'
+            )
+        
 
     def cd_delete_item(self):
-        ...
+        cd_countdown_list = self.findChild(ListWidget, 'countdown_list')
+        selected_items = cd_countdown_list.selectedItems()
+        if selected_items:
+            item = selected_items[0]
+            cd_countdown_list.takeItem(cd_countdown_list.row(item))
 
     def cd_add_item(self):
-        ...
+        cd_countdown_list = self.findChild(ListWidget, 'countdown_list')
+        cd_text_cd = self.findChild(LineEdit, 'text_cd')
+        cd_set_countdown_date = self.findChild(CalendarPicker, 'set_countdown_date')
+        cd_countdown_list.addItem(
+            f'{cd_set_countdown_date.text().replace("/", "-")}--{cd_text_cd.text()}'
+        )
 
     def cd_save_item(self):
-        ...
+        cd_countdown_list = self.findChild(ListWidget, 'countdown_list')
+        countdown_date = []
+        cd_text_custom = []
+
+        for i in range(cd_countdown_list.count()):
+            item = cd_countdown_list.item(i) 
+            text = item.text().split('--')
+            countdown_date.append(text[0])
+            cd_text_custom.append(text[1])
+        
+        Flyout.create(
+                icon=InfoBarIcon.SUCCESS,
+                title='保存成功',
+                content=f"已保存至 ./config.ini",
+                target=self.findChild(PrimaryPushButton, 'save_countdown'),
+                parent=self,
+                isClosable=True,
+                aniType=FlyoutAnimationType.PULL_UP
+            )
+        
+        config_center.write_conf('Date', 'countdown_date', ','.join(countdown_date))
+        config_center.write_conf('Date', 'cd_text_custom', ','.join(cd_text_custom))
 
     def setup_countdown_edit(self):
         cd_load_item()
@@ -1963,7 +2002,7 @@ class SettingsMenu(FluentWindow):
         cd_add_button.clicked.connect(self.cd_add_item)
 
         cd_schedule_list = self.findChild(ListWidget, 'countdown_list')
-        cd_schedule_list.addItems([f"{date}-{countdown_dict[date]}" for date in countdown_dict])
+        cd_schedule_list.addItems([f"{date}--{countdown_dict[date]}" for date in countdown_dict])
         
         cd_save_button = self.findChild(PrimaryPushButton, 'save_countdown')
         cd_save_button.clicked.connect(self.cd_save_item)
