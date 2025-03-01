@@ -45,7 +45,8 @@
   "Date": {
     "start_date": "",
     "cd_text_custom": "自定义",
-    "countdown_date": ""
+    "countdown_date": "",
+    "countdown_upd_cd": 30
   },
   "Audio": {
     "volume": 75,
