@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>662</width>
+    <width>648</width>
     <height>627</height>
    </rect>
   </property>
@@ -145,10 +145,20 @@
     </layout>
    </item>
    <item>
-    <layout class="QHBoxLayout" name="horizontalLayout_4" stretch="0,0">
+    <layout class="QHBoxLayout" name="horizontalLayout_4" stretch="0,0,0,0">
      <property name="spacing">
       <number>2</number>
      </property>
+     <item>
+      <widget class="BodyLabel" name="BodyLabel">
+       <property name="text">
+        <string>轮播间隔（秒）</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="SpinBox" name="countdown_upd_cd"/>
+     </item>
      <item>
       <spacer name="horizontalSpacer">
        <property name="orientation">
@@ -224,6 +234,11 @@
   <customwidget>
    <class>LineEdit</class>
    <extends>QLineEdit</extends>
+   <header>qfluentwidgets</header>
+  </customwidget>
+  <customwidget>
+   <class>SpinBox</class>
+   <extends>QSpinBox</extends>
    <header>qfluentwidgets</header>
   </customwidget>
   <customwidget>
