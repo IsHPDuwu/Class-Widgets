@@ -2010,7 +2010,7 @@ class SettingsMenu(FluentWindow):
         cd_mode = self.findChild(ComboBox, 'countdown_mode')
         cd_mode.addItems(list_.countdown_modes)
         cd_mode.setCurrentIndex(int(config_center.read_conf('Date', 'countdown_custom_mode')))
-        cd_mode.currentIndexChanged.connect(lambda: config_center.write_conf('Date','countdown_mode', str(cd_mode.currentIndex())))
+        cd_mode.currentIndexChanged.connect(lambda: config_center.write_conf('Date','countdown_custom_mode', str(cd_mode.currentIndex())))
 
         cd_upd_cd = self.findChild(SpinBox, 'countdown_upd_cd')
         cd_upd_cd.setValue(int(config_center.read_conf('Date', 'countdown_upd_cd')))
