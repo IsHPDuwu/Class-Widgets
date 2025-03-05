@@ -145,10 +145,20 @@
     </layout>
    </item>
    <item>
-    <layout class="QHBoxLayout" name="horizontalLayout_4" stretch="0,0,0,0">
+    <layout class="QHBoxLayout" name="horizontalLayout_4" stretch="0,0,0,0,0,0">
      <property name="spacing">
       <number>2</number>
      </property>
+     <item>
+      <widget class="BodyLabel" name="BodyLabel_4">
+       <property name="text">
+        <string>模式</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="ComboBox" name="countdown_mode"/>
+     </item>
      <item>
       <widget class="BodyLabel" name="BodyLabel">
        <property name="text">
@@ -196,6 +206,11 @@
   </layout>
  </widget>
  <customwidgets>
+  <customwidget>
+   <class>ComboBox</class>
+   <extends>QPushButton</extends>
+   <header>qfluentwidgets</header>
+  </customwidget>
   <customwidget>
    <class>PushButton</class>
    <extends>QPushButton</extends>
