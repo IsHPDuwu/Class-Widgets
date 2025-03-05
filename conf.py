@@ -214,12 +214,14 @@ def get_time_offset():  # 获取时差偏移
     else:
         return int(time_offset)
     
-def update_countdown():
+def update_countdown(cnt):
     global update_countdown_custom_last
     global countdown_cnt
     if (length:=len(config_center.read_conf('Date', 'cd_text_custom').split(','))) == 0:
         countdown_cnt = -1
-    if (nowtime:=time.time()) - update_countdown_custom_last > int(config_center.read_conf('Date', 'countdown_upd_cd')):
+    elif config_center.read_conf('Date', 'countdown_custom_mode') == '1':
+        countdown_cnt = cnt
+    elif (nowtime:=time.time()) - update_countdown_custom_last > int(config_center.read_conf('Date', 'countdown_upd_cd')):
         update_countdown_custom_last = nowtime
         countdown_cnt += 1
         if countdown_cnt >= length:
@@ -227,15 +229,18 @@ def update_countdown():
         
 def get_cd_text_custom():
     global countdown_cnt
-    return config_center.read_conf('Date', 'cd_text_custom').split(',')[countdown_cnt] if countdown_cnt >= 0 else ''
+    if countdown_cnt >= len(li:=config_center.read_conf('Date', 'cd_text_custom').split(',')):
+        return '未设置'
+    return li[countdown_cnt] if countdown_cnt >= 0 else ''
 
 
 def get_custom_countdown():
     global countdown_cnt
-    if countdown_cnt == -1:
+    li = config_center.read_conf('Date', 'countdown_date').split(',')
+    if countdown_cnt == -1 or countdown_cnt >= len(li):
         return '未设置'  # 获取自定义倒计时
     else:
-        custom_countdown = config_center.read_conf('Date', 'countdown_date').split(',')[countdown_cnt]
+        custom_countdown = li[countdown_cnt]
         custom_countdown = datetime.strptime(custom_countdown, '%Y-%m-%d')
         if custom_countdown < datetime.now():
             return '0 天'

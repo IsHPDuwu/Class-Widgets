@@ -1139,7 +1139,7 @@ class SettingsMenu(FluentWindow):
     def ct_add_widget(self):
         widgets_list = self.findChild(ListWidget, 'widgets_list')
         widgets_combo = self.findChild(ComboBox, 'widgets_combo')
-        if not widgets_list.findItems(widgets_combo.currentText(), QtCore.Qt.MatchFlag.MatchExactly):
+        if 1 or not widgets_list.findItems(widgets_combo.currentText(), QtCore.Qt.MatchFlag.MatchExactly):
             widgets_list.addItem(widgets_combo.currentText())
         self.ct_update_preview()
 
