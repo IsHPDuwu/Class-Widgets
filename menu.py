@@ -1937,7 +1937,7 @@ class SettingsMenu(FluentWindow):
         if selected_items:
             selected_item = selected_items[0]
             selected_item.setText(
-                f'{cd_set_countdown_date.text().replace('/', '-')}--{cd_text_cd.text()}'
+                f"{cd_set_countdown_date.text().replace('/', '-')}--{cd_text_cd.text()}"
             )
         
 
