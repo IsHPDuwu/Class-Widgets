@@ -145,12 +145,9 @@
     </layout>
    </item>
    <item>
-    <layout class="QHBoxLayout" name="horizontalLayout_2" stretch="0,0,0,0">
+    <layout class="QHBoxLayout" name="horizontalLayout_4" stretch="0,0,0,0,0,0">
      <property name="spacing">
       <number>2</number>
-     </property>
-     <property name="bottomMargin">
-      <number>0</number>
      </property>
      <item>
       <widget class="BodyLabel" name="BodyLabel_4">
@@ -166,7 +163,14 @@
       </widget>
      </item>
      <item>
-      <widget class="ComboBox" name="countdown_mode"/>
+      <widget class="ComboBox" name="countdown_mode">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+      </widget>
      </item>
      <item>
       <widget class="BodyLabel" name="BodyLabel">
@@ -191,13 +195,6 @@
        </property>
       </widget>
      </item>
-    </layout>
-   </item>
-   <item>
-    <layout class="QHBoxLayout" name="horizontalLayout_4" stretch="0,0">
-     <property name="spacing">
-      <number>2</number>
-     </property>
      <item>
       <spacer name="horizontalSpacer">
        <property name="orientation">
