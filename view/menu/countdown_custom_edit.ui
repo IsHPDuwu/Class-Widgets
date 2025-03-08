@@ -145,14 +145,23 @@
     </layout>
    </item>
    <item>
-    <layout class="QHBoxLayout" name="horizontalLayout_4" stretch="0,0,0,0,0,0">
+    <layout class="QHBoxLayout" name="horizontalLayout_2" stretch="0,0,0,0">
      <property name="spacing">
       <number>2</number>
      </property>
+     <property name="bottomMargin">
+      <number>0</number>
+     </property>
      <item>
       <widget class="BodyLabel" name="BodyLabel_4">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
        <property name="text">
-        <string>模式</string>
+        <string>倒计时模式</string>
        </property>
       </widget>
      </item>
@@ -161,18 +170,41 @@
      </item>
      <item>
       <widget class="BodyLabel" name="BodyLabel">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
        <property name="text">
         <string>轮播间隔（秒）</string>
        </property>
       </widget>
      </item>
      <item>
-      <widget class="SpinBox" name="countdown_upd_cd"/>
+      <widget class="SpinBox" name="countdown_upd_cd">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+      </widget>
      </item>
+    </layout>
+   </item>
+   <item>
+    <layout class="QHBoxLayout" name="horizontalLayout_4" stretch="0,0">
+     <property name="spacing">
+      <number>2</number>
+     </property>
      <item>
       <spacer name="horizontalSpacer">
        <property name="orientation">
         <enum>Qt::Horizontal</enum>
+       </property>
+       <property name="sizeType">
+        <enum>QSizePolicy::Expanding</enum>
        </property>
        <property name="sizeHint" stdset="0">
         <size>
