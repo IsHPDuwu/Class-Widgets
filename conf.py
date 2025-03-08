@@ -241,6 +241,8 @@ def get_custom_countdown():
         return '未设置'  # 获取自定义倒计时
     else:
         custom_countdown = li[countdown_cnt]
+        if custom_countdown == '':
+            return '未设置'
         custom_countdown = datetime.strptime(custom_countdown, '%Y-%m-%d')
         if custom_countdown < datetime.now():
             return '0 天'
