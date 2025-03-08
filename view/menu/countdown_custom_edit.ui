@@ -145,6 +145,7 @@
     </layout>
    </item>
    <item>
+<<<<<<< Updated upstream
     <layout class="QHBoxLayout" name="horizontalLayout_4" stretch="0,0,0,0,0,0">
      <property name="spacing">
       <number>2</number>
@@ -153,6 +154,25 @@
       <widget class="BodyLabel" name="BodyLabel_4">
        <property name="text">
         <string>模式</string>
+=======
+    <layout class="QHBoxLayout" name="horizontalLayout_2" stretch="0,0,0,0">
+     <property name="spacing">
+      <number>2</number>
+     </property>
+     <property name="bottomMargin">
+      <number>0</number>
+     </property>
+     <item>
+      <widget class="BodyLabel" name="BodyLabel_4">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="text">
+        <string>倒计时模式</string>
+>>>>>>> Stashed changes
        </property>
       </widget>
      </item>
@@ -161,19 +181,53 @@
      </item>
      <item>
       <widget class="BodyLabel" name="BodyLabel">
+<<<<<<< Updated upstream
+=======
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+>>>>>>> Stashed changes
        <property name="text">
         <string>轮播间隔（秒）</string>
        </property>
       </widget>
      </item>
      <item>
+<<<<<<< Updated upstream
       <widget class="SpinBox" name="countdown_upd_cd"/>
      </item>
+=======
+      <widget class="SpinBox" name="countdown_upd_cd">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+   <item>
+    <layout class="QHBoxLayout" name="horizontalLayout_4" stretch="0,0">
+     <property name="spacing">
+      <number>2</number>
+     </property>
+>>>>>>> Stashed changes
      <item>
       <spacer name="horizontalSpacer">
        <property name="orientation">
         <enum>Qt::Horizontal</enum>
        </property>
+<<<<<<< Updated upstream
+=======
+       <property name="sizeType">
+        <enum>QSizePolicy::Expanding</enum>
+       </property>
+>>>>>>> Stashed changes
        <property name="sizeHint" stdset="0">
         <size>
          <width>40</width>
