@@ -1468,12 +1468,10 @@ class DesktopWidget(QWidget):  # 主要小组件
         if first_start:
             self.animate_window(self.position)
             self.setWindowOpacity(int(config_center.read_conf('General', 'opacity')) / 100)
-            print(f"{self.path},{self.position}")
         else:
             self.setWindowOpacity(0)
             self.animate_show_opacity()
             self.move(self.position[0], self.position[1])
-            print(f"{self.path},{self.position}")
             self.resize(self.w, self.height())
 
         self.update_data('')
