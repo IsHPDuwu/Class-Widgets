@@ -2074,7 +2074,6 @@ def init():
     global theme, radius, mgr, screen_width, first_start, fw
     update_timer.remove_all_callbacks()
 
-    # 添加主题监听器
     def on_theme_changed(new_theme):
         global theme
         theme = new_theme
@@ -2084,7 +2083,6 @@ def init():
 
     config_center.add_listener('General', 'theme', on_theme_changed)
 
-    theme = config_center.read_conf('General', 'theme')
     global theme, radius, mgr, screen_width, first_start, fw
     update_timer.remove_all_callbacks()
 

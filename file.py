@@ -28,6 +28,7 @@ class ConfigCenter:
         self.check_config()
         self.schedule_name = self.read_conf('General', 'schedule')
         self.old_schedule_name = self.schedule_name
+        self.listeners = {}
 
     def update_conf(self):
         try:
@@ -56,10 +57,16 @@ class ConfigCenter:
             return dict(self.default_data[section])
         else:
             return None
+        
+    def add_listener(self, section, key, callback):
+        self.listeners[(section, key)] = self.listeners.get((section, key), []) + [callback]
 
     def write_conf(self, section, key, value):
         if section not in self.config:
             self.config.add_section(section)
+        
+        for listener in self.listeners.get((section, key), []):
+            listener(value)
 
         self.config.set(section, key, str(value))
 
