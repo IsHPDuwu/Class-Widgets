@@ -1436,7 +1436,7 @@ class DesktopWidget(QWidget):  # 主要小组件
         elif path == 'widget-next-activity.ui':  # 接下来的活动
             self.nl_text = self.findChild(QLabel, 'next_lesson_text')
 
-        elif path == 'widget-countdown-custom.ui':  # 自定义倒计时
+        elif path == 'widget-countdown-day.ui':  # 自定义倒计时
             self.custom_title = self.findChild(QLabel, 'countdown_custom_title')
             self.custom_countdown = self.findChild(QLabel, 'custom_countdown')
 
@@ -1691,7 +1691,7 @@ class DesktopWidget(QWidget):  # 主要小组件
                 self.ac_title.setText(cd_list[0])
                 self.countdown_progress_bar.setValue(cd_list[2])
 
-        if path == 'widget-countdown-custom.ui':  # 自定义倒计时
+        if path == 'widget-countdown-day.ui':  # 自定义倒计时
             conf.update_countdown(self.cnt)
             self.custom_title.setText(f'距离 {conf.get_cd_text_custom()} 还有')
             self.custom_countdown.setText(conf.get_custom_countdown())

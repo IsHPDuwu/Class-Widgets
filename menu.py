@@ -493,7 +493,7 @@ class SettingsMenu(FluentWindow):
         self.teInterface.setObjectName("teInterface")
         self.seInterface = uic.loadUi(f'{base_directory}/view/menu/schedule_edit.ui')  # 课程表编辑
         self.seInterface.setObjectName("seInterface")
-        self.cdInterface = uic.loadUi(f'{base_directory}/view/menu/countdown_custom_edit.ui') # 自定义倒计时编辑
+        self.cdInterface = uic.loadUi(f'{base_directory}/view/menu/countdown_custom_edit.ui') # 倒计日编辑
         self.cdInterface.setObjectName("cdInterface")
         self.adInterface = uic.loadUi(f'{base_directory}/view/menu/advance.ui')  # 高级选项
         self.adInterface.setObjectName("adInterface")
@@ -1936,7 +1936,7 @@ class SettingsMenu(FluentWindow):
         if selected_items:
             selected_item = selected_items[0]
             selected_item.setText(
-                f"{cd_set_countdown_date.text().replace('/', '-')}--{cd_text_cd.text()}"
+                f"{cd_set_countdown_date.text().replace('/', '-')} - {cd_text_cd.text()}"
             )
         
 
@@ -1952,7 +1952,7 @@ class SettingsMenu(FluentWindow):
         cd_text_cd = self.findChild(LineEdit, 'text_cd')
         cd_set_countdown_date = self.findChild(CalendarPicker, 'set_countdown_date')
         cd_countdown_list.addItem(
-            f'{cd_set_countdown_date.text().replace("/", "-")}--{cd_text_cd.text()}'
+            f'{cd_set_countdown_date.text().replace("/", "-")} - {cd_text_cd.text()}'
         )
 
     def cd_save_item(self):
@@ -1962,7 +1962,7 @@ class SettingsMenu(FluentWindow):
 
         for i in range(cd_countdown_list.count()):
             item = cd_countdown_list.item(i) 
-            text = item.text().split('--')
+            text = item.text().split(' - ')
             countdown_date.append(text[0])
             cd_text_custom.append(text[1])
         
@@ -1984,24 +1984,24 @@ class SettingsMenu(FluentWindow):
         logger.debug(f"{countdown_dict}")
         cd_set_button = self.findChild(ToolButton, 'set_button_cd')
         cd_set_button.setIcon(fIcon.EDIT)
-        cd_set_button.setToolTip('编辑自定义倒计时')
+        cd_set_button.setToolTip('编辑倒计日')
         cd_set_button.installEventFilter(ToolTipFilter(cd_set_button, showDelay=300, position=ToolTipPosition.TOP))
         cd_set_button.clicked.connect(self.cd_edit_item)
 
         cd_clear_button = self.findChild(ToolButton, 'clear_button_cd')
         cd_clear_button.setIcon(fIcon.DELETE)
-        cd_clear_button.setToolTip('删除自定义倒计时')
+        cd_clear_button.setToolTip('删除倒计日')
         cd_clear_button.installEventFilter(ToolTipFilter(cd_clear_button, showDelay=300, position=ToolTipPosition.TOP))
         cd_clear_button.clicked.connect(self.cd_delete_item)
 
         cd_add_button = self.findChild(ToolButton, 'add_button_cd')
         cd_add_button.setIcon(fIcon.ADD)
-        cd_add_button.setToolTip('添加自定义倒计时')
+        cd_add_button.setToolTip('添加倒计日')
         cd_add_button.installEventFilter(ToolTipFilter(cd_add_button, showDelay=300, position=ToolTipPosition.TOP))
         cd_add_button.clicked.connect(self.cd_add_item)
 
         cd_schedule_list = self.findChild(ListWidget, 'countdown_list')
-        cd_schedule_list.addItems([f"{date}--{countdown_dict[date]}" for date in countdown_dict])
+        cd_schedule_list.addItems([f"{date} - {countdown_dict[date]}" for date in countdown_dict])
         
         cd_save_button = self.findChild(PrimaryPushButton, 'save_countdown')
         cd_save_button.clicked.connect(self.cd_save_item)
@@ -2035,7 +2035,7 @@ class SettingsMenu(FluentWindow):
         self.addSubInterface(self.spInterface, fIcon.HOME, '课表预览')
         self.addSubInterface(self.teInterface, fIcon.DATE_TIME, '时间线编辑')
         self.addSubInterface(self.seInterface, fIcon.EDUCATION, '课程表编辑')
-        self.addSubInterface(self.cdInterface, fIcon.EDUCATION, '自定义倒计时编辑')
+        self.addSubInterface(self.cdInterface, fIcon.CALENDAR, '倒计日编辑')
         self.addSubInterface(self.cfInterface, fIcon.FOLDER, '配置文件')
         self.navigationInterface.addSeparator()
         self.addSubInterface(self.hdInterface, fIcon.QUESTION, '帮助')
