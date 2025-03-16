@@ -379,7 +379,6 @@ class DownloadAndExtract(QThread):  # 下载并解压插件
 
 
 def check_update():
-    return 
     global threads
     version_thread = VersionThread()
     threads.append(version_thread)
