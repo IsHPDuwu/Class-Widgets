@@ -60,7 +60,16 @@ class ConfigCenter:
         
     def add_listener(self, section, key, callback):
         self.listeners[(section, key)] = self.listeners.get((section, key), []) + [callback]
+    
+    def remove_listener(self, section, key, callback):
+        if (section, key) in self.listeners:
+            if callback in self.listeners[(section, key)]:
+                self.listeners[(section, key)].remove(callback)
 
+    def clear_listener(self, section, key):
+        if (section, key) in self.listeners:
+            self.listeners[(section, key)] = []
+        
     def write_conf(self, section, key, value):
         if section not in self.config:
             self.config.add_section(section)
