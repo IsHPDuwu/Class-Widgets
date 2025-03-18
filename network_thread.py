@@ -5,7 +5,7 @@ import zipfile  # 解压插件zip
 from datetime import datetime
 
 import requests
-from PyQt5.QtCore import QThread, pyqtSignal
+from PyQt5.QtCore import QThread, pyqtSignal, QEventLoop
 from loguru import logger
 
 import conf
@@ -416,14 +416,21 @@ class weatherReportThread(QThread):  # 获取最新天气信息
             self.weather_signal.emit(weather_data)
         except Exception as e:
             logger.error(f"触发天气信息失败: {e}")
+        finally:
+            self.deleteLater()
 
     @staticmethod
     def get_weather_data():
         location_key = config_center.read_conf('Weather', 'city')
         if location_key == '0':
-            get_city = getCity()
-            get_city.start()
-            location_key = 101010100
+            city_thread = getCity()
+            loop = QEventLoop()
+            city_thread.finished.connect(loop.quit)
+            city_thread.start()
+            loop.exec_()  # 阻塞到完成
+            location_key = config_center.read_conf('Weather', 'city')
+            if location_key == '0' or not location_key:
+                location_key = 101010100
         days = 1
         key = config_center.read_conf('Weather', 'api_key')
         url = db.get_weather_url().format(location_key=location_key, days=days, key=key)
