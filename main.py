@@ -2077,19 +2077,6 @@ def init():
     global theme, radius, mgr, screen_width, first_start, fw
     update_timer.remove_all_callbacks()
 
-    # 添加主题监听器
-    def on_theme_changed(new_theme):
-        global theme
-        theme = new_theme
-        logger.info(f'检测到主题切换：{theme}')
-        mgr.clear_widgets()
-        init()
-
-    config_center.add_listener('General', 'theme', on_theme_changed)
-
-    theme = config_center.read_conf('General', 'theme')
-    global theme, radius, mgr, screen_width, first_start, fw
-    update_timer.remove_all_callbacks()
 
     theme = config_center.read_conf('General', 'theme')  # 主题
     if not os.path.exists(f'{base_directory}/ui/{theme}/theme.json'):
