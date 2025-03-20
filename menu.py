@@ -11,7 +11,7 @@ from PyQt5 import uic, QtCore
 from PyQt5.QtCore import Qt, QTime, QUrl, QDate, pyqtSignal
 from PyQt5.QtGui import QIcon, QDesktopServices, QColor
 from PyQt5.QtWidgets import QApplication, QHeaderView, QTableWidgetItem, QLabel, QHBoxLayout, QSizePolicy, \
-    QSpacerItem, QFileDialog, QVBoxLayout, QScroller
+    QSpacerItem, QFileDialog, QVBoxLayout, QScroller, QListWidget, QWidget, QListWidgetItem
 from loguru import logger
 from qfluentwidgets import (
     Theme, setTheme, FluentWindow, FluentIcon as fIcon, ToolButton, ListWidget, ComboBox, CaptionLabel,
@@ -20,7 +20,7 @@ from qfluentwidgets import (
     CalendarPicker, BodyLabel, ColorDialog, isDarkTheme, TimeEdit, EditableComboBox, MessageBoxBase,
     SearchLineEdit, Slider, PlainTextEdit, ToolTipFilter, ToolTipPosition, RadioButton, HyperlinkLabel,
     PrimaryDropDownPushButton, Action, RoundMenu, CardWidget, ImageLabel, StrongBodyLabel,
-    TransparentDropDownToolButton, Dialog, SmoothScrollArea, TransparentToolButton, HyperlinkButton
+    TransparentDropDownToolButton, Dialog, SmoothScrollArea, TransparentToolButton, HyperlinkButton, TableWidget
 )
 
 import conf
@@ -626,49 +626,109 @@ class SettingsMenu(FluentWindow):
         spin_prepare_time.setValue(int(config_center.read_conf('Toast', 'prepare_minutes')))
         spin_prepare_time.valueChanged.connect(self.save_prepare_time)  # 准备时间
 
+    class cf_FileItem(QWidget):
+        def __init__(self, filename, source, parent=None):
+            super().__init__(parent)
+            layout = QHBoxLayout()
+            
+            # Green bar on the left
+            self.green_bar = QWidget(self)
+            self.green_bar.setStyleSheet("background-color: green;")
+            self.green_bar.setFixedWidth(5)  # Set the width of the green bar
+            
+            self.label_name = QLabel(f"<b>{filename}</b>")
+            self.label_source = QLabel(source)
+            self.setting_button = ToolButton(fIcon.SETTING)
+            
+            layout.addWidget(self.green_bar)  # Add the green bar first
+            layout.addWidget(self.label_name)
+            layout.addWidget(self.label_source)
+            layout.addWidget(self.setting_button)
+            
+            self.setLayout(layout)
+            self.set_selected(False)  # Default to not selected
+
+        def set_selected(self, selected):
+            # Modify appearance when selected
+            if selected:
+                self.setStyleSheet("background-color: lightblue;")  # Modify selected background color
+                self.green_bar.setVisible(True)  # Show the green bar when selected
+            else:
+                self.setStyleSheet("background-color: none;")  # Reset background color when unselected
+                self.green_bar.setVisible(False)  # Hide the green bar when unselected
+
+
     def setup_configs_interface(self):  # 配置界面
-        self.conf_combo = self.cfInterface.findChild(ComboBox, 'conf_combo')
-        self.conf_combo.clear()
-        self.conf_combo.addItems(list_.get_schedule_config())
-        self.conf_combo.setCurrentIndex(
-            list_.get_schedule_config().index(config_center.read_conf('General', 'schedule')))
-        self.conf_combo.currentIndexChanged.connect(self.ad_change_file)  # 切换配置文件
+        self.config_url = self.cfInterface.findChild(LineEdit, 'config_url')
 
-        conf_name = self.cfInterface.findChild(LineEdit, 'conf_name')
-        conf_name.setText(config_center.schedule_name[:-5])
-        conf_name.textEdited.connect(self.ad_change_file_name)
+        self.config_download = self.cfInterface.findChild(PushButton, 'config_download')
+        # self.config_download.clicked.connect(self.cf_download_config)  # 下载配置
         
-        set_start_date = self.cfInterface.findChild(CalendarPicker, 'set_start_date')  # 日期
-        if config_center.read_conf('Date', 'start_date') != '':
-            set_start_date.setDate(QDate.fromString(config_center.read_conf('Date', 'start_date'), 'yyyy-M-d'))
-        set_start_date.dateChanged.connect(
-            lambda: config_center.write_conf('Date', 'start_date', set_start_date.date.toString('yyyy-M-d')))  # 开学日期
+        self.update_all = self.cfInterface.findChild(PushButton, 'config_update_all')
+        # self.update_all.clicked.connect(self.cf_update_all)  # 更新全部
 
-        offset_spin = self.cfInterface.findChild(SpinBox, 'offset_spin')
-        offset_spin.setValue(int(config_center.read_conf('General', 'time_offset')))
-        offset_spin.valueChanged.connect(
-            lambda: config_center.write_conf('General', 'time_offset', str(offset_spin.value()))
-        ) 
+        self.import_from_file = self.cfInterface.findChild(PushButton, 'config_import')
+        # self.import_from_file.clicked.connect(self.cf_import_from_file)  # 从文件导入
+
+        self.table:QListWidget = self.cfInterface.findChild(QListWidget, 'config_table')
+        # self.table.cellClicked.connect(self.cf_table_cell_clicked)  # 表格点
+        self.table.setViewMode(QListWidget.IconMode)  # 允许横向排列
+        self.table.setFlow(QListWidget.LeftToRight)  # 设置从左到右排列
+        self.table.setResizeMode(QListWidget.Adjust)  # 调整大小
+        self.table.setWrapping(True)  # 允许换行
+        # self.table.setSelectionMode(QAbstractItemView.SingleSelection)
+
+        def test():
+            item_widget = self.cf_FileItem("new_file.yaml", "local file (just now)")
+            item = QListWidgetItem()
+            item.setSizeHint(item_widget.sizeHint())
+            self.table.addItem(item)
+
+            self.table.setItemWidget(item, item_widget)
+
+        [test() for i in range(10)]
+        # self.conf_combo = self.cfInterface.findChild(ComboBox, 'conf_combo')
+        # self.conf_combo.clear()
+        # self.conf_combo.addItems(list_.get_schedule_config())
+        # self.conf_combo.setCurrentIndex(
+        #     list_.get_schedule_config().index(config_center.read_conf('General', 'schedule')))
+        # self.conf_combo.currentIndexChanged.connect(self.ad_change_file)  # 切换配置文件
+
+        # conf_name = self.cfInterface.findChild(LineEdit, 'conf_name')
+        # conf_name.setText(config_center.schedule_name[:-5])
+        # conf_name.textEdited.connect(self.ad_change_file_name)
         
-        switch_enable_alt_schedule = self.cfInterface.findChild(SwitchButton, 'switch_enable_alt_schedule')
-        switch_enable_alt_schedule.setChecked(int(config_center.read_conf('General', 'enable_alt_schedule')))
-        switch_enable_alt_schedule.checkedChanged.connect(
-            lambda checked: switch_checked('General', 'enable_alt_schedule', checked)
-        )  
+        # set_start_date = self.cfInterface.findChild(CalendarPicker, 'set_start_date')  # 日期
+        # if config_center.read_conf('Date', 'start_date') != '':
+        #     set_start_date.setDate(QDate.fromString(config_center.read_conf('Date', 'start_date'), 'yyyy-M-d'))
+        # set_start_date.dateChanged.connect(
+        #     lambda: config_center.write_conf('Date', 'start_date', set_start_date.date.toString('yyyy-M-d')))  # 开学日期
 
-        cf_import_schedule = self.findChild(PushButton, 'im_schedule')
-        cf_import_schedule.clicked.connect(self.cf_import_schedule)  # 导入课程表
-        cf_export_schedule = self.findChild(PushButton, 'ex_schedule')
-        cf_export_schedule.clicked.connect(self.cf_export_schedule)  # 导出课程表
-        cf_open_schedule_folder = self.findChild(PushButton, 'open_schedule_folder')  # 打开课程表文件夹
-        cf_open_schedule_folder.clicked.connect(lambda: open_dir(os.path.join(os.path.abspath('.'), 'config/schedule')))
+        # offset_spin = self.cfInterface.findChild(SpinBox, 'offset_spin')
+        # offset_spin.setValue(int(config_center.read_conf('General', 'time_offset')))
+        # offset_spin.valueChanged.connect(
+        #     lambda: config_center.write_conf('General', 'time_offset', str(offset_spin.value()))
+        # ) 
+        
+        # switch_enable_alt_schedule = self.cfInterface.findChild(SwitchButton, 'switch_enable_alt_schedule')
+        # switch_enable_alt_schedule.setChecked(int(config_center.read_conf('General', 'enable_alt_schedule')))
+        # switch_enable_alt_schedule.checkedChanged.connect(
+        #     lambda checked: switch_checked('General', 'enable_alt_schedule', checked)
+        # )  
 
-        cf_import_schedule_cses = self.findChild(PushButton, 'im_schedule_cses')
-        cf_import_schedule_cses.clicked.connect(self.cf_import_schedule_cses)  # 导入课程表（CSES）
-        cf_export_schedule_cses = self.findChild(PushButton, 'ex_schedule_cses')
-        cf_export_schedule_cses.clicked.connect(self.cf_export_schedule_cses)  # 导出课程表（CSES）
-        cf_what_is_cses = self.findChild(HyperlinkButton, 'what_is')
-        cf_what_is_cses.setUrl(QUrl('https://github.com/CSES-org/CSES'))
+        # cf_import_schedule = self.findChild(PushButton, 'im_schedule')
+        # cf_import_schedule.clicked.connect(self.cf_import_schedule)  # 导入课程表
+        # cf_export_schedule = self.findChild(PushButton, 'ex_schedule')
+        # cf_export_schedule.clicked.connect(self.cf_export_schedule)  # 导出课程表
+        # cf_open_schedule_folder = self.findChild(PushButton, 'open_schedule_folder')  # 打开课程表文件夹
+        # cf_open_schedule_folder.clicked.connect(lambda: open_dir(os.path.join(os.path.abspath('.'), 'config/schedule')))
+
+        # cf_import_schedule_cses = self.findChild(PushButton, 'im_schedule_cses')
+        # cf_import_schedule_cses.clicked.connect(self.cf_import_schedule_cses)  # 导入课程表（CSES）
+        # cf_export_schedule_cses = self.findChild(PushButton, 'ex_schedule_cses')
+        # cf_export_schedule_cses.clicked.connect(self.cf_export_schedule_cses)  # 导出课程表（CSES）
+        # cf_what_is_cses = self.findChild(HyperlinkButton, 'what_is')
+        # cf_what_is_cses.setUrl(QUrl('https://github.com/CSES-org/CSES'))
 
     def setup_customization_interface(self):
         ct_scroll = self.findChild(SmoothScrollArea, 'ct_scroll')  # 触摸屏适配
