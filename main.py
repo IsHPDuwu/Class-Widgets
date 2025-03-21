@@ -1701,7 +1701,7 @@ class DesktopWidget(QWidget):  # 主要小组件
         get_excluded_lessons()
         get_next_lessons()
 
-        if (status:=config_center.read_conf('General', 'hide')) == '1':  # 上课自动隐藏
+        if (hide_mode:=config_center.read_conf('General', 'hide')) == '1':  # 上课自动隐藏
             if current_state:
                 if not current_lesson_name in excluded_lessons:
                     mgr.decide_to_hide()
@@ -1709,12 +1709,12 @@ class DesktopWidget(QWidget):  # 主要小组件
                     mgr.show_windows()
             else:
                 mgr.show_windows()
-        elif status == '2': # 最大化/全屏自动隐藏
+        elif hide_mode == '2': # 最大化/全屏自动隐藏
             if check_windows_maximize() or check_fullscreen():
                 mgr.decide_to_hide()
             else:
                 mgr.show_windows()
-        elif status == '3': # 灵活隐藏
+        elif hide_mode == '3': # 灵活隐藏
             if mgr.hide_status is None:
                 mgr.hide_status = (False, current_state)
             elif mgr.hide_status[0] and mgr.hide_status[1] == current_state:
