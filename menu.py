@@ -8,13 +8,13 @@ from pathlib import Path
 from shutil import rmtree
 
 from PyQt5 import uic, QtCore
-from PyQt5.QtCore import Qt, QTime, QUrl, QDate, pyqtSignal, QSize, QRect
+from PyQt5.QtCore import Qt, QTime, QUrl, QDate, pyqtSignal, QSize
 from PyQt5.QtGui import QIcon, QDesktopServices, QColor
 # from PyQt5.QtPrintSupport import QPrinter
-from PyQt5.QtCore import Qt, pyqtSignal, QModelIndex, QItemSelectionModel, pyqtProperty
+from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtGui import QPainter
 from PyQt5.QtWidgets import QApplication, QHeaderView, QTableWidgetItem, QLabel, QHBoxLayout, QSizePolicy, \
-    QSpacerItem, QFileDialog, QVBoxLayout, QScroller, QWidget, QListWidgetItem, QStyledItemDelegate
+    QSpacerItem, QFileDialog, QVBoxLayout, QScroller, QWidget, QListWidgetItem
 from packaging.version import Version
 from loguru import logger
 from qfluentwidgets import (
@@ -24,7 +24,7 @@ from qfluentwidgets import (
     CalendarPicker, BodyLabel, ColorDialog, isDarkTheme, TimeEdit, EditableComboBox, MessageBoxBase,
     SearchLineEdit, Slider, PlainTextEdit, ToolTipFilter, ToolTipPosition, RadioButton, HyperlinkLabel,
     PrimaryDropDownPushButton, Action, RoundMenu, CardWidget, ImageLabel, StrongBodyLabel,
-    TransparentDropDownToolButton, Dialog, SmoothScrollArea, TransparentToolButton, TableWidget, HyperlinkButton
+    TransparentDropDownToolButton, Dialog, SmoothScrollArea, TransparentToolButton, TableWidget, HyperlinkButton, DropDownToolButton
 )
 from qfluentwidgets.common import themeColor
 from qfluentwidgets.components.widgets import ListItemDelegate
@@ -646,16 +646,23 @@ class SettingsMenu(FluentWindow):
         spin_prepare_time.valueChanged.connect(self.save_prepare_time)  # 准备时间
 
     class cf_FileItem(QWidget, uic.loadUiType(f'{base_directory}/view/menu/file_item.ui')[0]):
-        def __init__(self, file_name='', file_path='local', id=None, settings_func=None):
+        def __init__(self, file_name='', file_path='local', id=None):
             super().__init__()
             self.setupUi(self)
             self.file_name = self.findChild(StrongBodyLabel, 'file_name')
             self.file_name.setText(file_name)
             self.file_path = self.findChild(BodyLabel, 'file_path')
             self.file_path.setText(file_path)
-            self.settings = self.findChild(ToolButton, 'file_item_settings')
+            self.settings = self.findChild(DropDownToolButton, 'file_item_settings')
             self.settings.setIcon(fIcon.SETTING)
-            self.settings.clicked.connect(lambda: settings_func(self.id))
+
+            menu = RoundMenu(parent=self.settings)
+            menu.addAction(Action(fIcon.DELETE, '删除', triggered=lambda: print("已发送")))
+            menu.addAction(Action(fIcon.SAVE, '导出', triggered=lambda: print("已保存")))
+            menu.addAction(Action(fIcon.SAVE, '导出为 CSEC', triggered=lambda: print("已保存")))
+
+            self.settings.setMenu(menu)
+
             self.id = id
 
     class cf_CustomDelegate(ListItemDelegate):

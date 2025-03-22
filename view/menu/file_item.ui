@@ -126,7 +126,7 @@
     </spacer>
    </item>
    <item>
-    <widget class="ToolButton" name="file_item_settings"/>
+    <widget class="DropDownToolButton" name="file_item_settings"/>
    </item>
   </layout>
  </widget>
@@ -134,6 +134,11 @@
   <customwidget>
    <class>ToolButton</class>
    <extends>QToolButton</extends>
+   <header>qfluentwidgets</header>
+  </customwidget>
+  <customwidget>
+   <class>DropDownToolButton</class>
+   <extends>ToolButton</extends>
    <header>qfluentwidgets</header>
   </customwidget>
   <customwidget>
