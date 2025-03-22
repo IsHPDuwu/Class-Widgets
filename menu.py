@@ -659,7 +659,7 @@ class SettingsMenu(FluentWindow):
             menu = RoundMenu(parent=self.settings)
             menu.addAction(Action(fIcon.DELETE, '删除', triggered=lambda: print("已发送")))
             menu.addAction(Action(fIcon.SAVE, '导出', triggered=lambda: print("已保存")))
-            menu.addAction(Action(fIcon.SAVE, '导出为 CSEC', triggered=lambda: print("已保存")))
+            menu.addAction(Action(fIcon.SAVE, '导出为 CSES', triggered=lambda: print("已保存")))
 
             self.settings.setMenu(menu)
 
