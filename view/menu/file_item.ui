@@ -91,7 +91,7 @@
       <item>
        <layout class="QVBoxLayout" name="verticalLayout">
         <item>
-         <widget class="StrongBodyLabel" name="StrongBodyLabel">
+         <widget class="StrongBodyLabel" name="file_name">
           <property name="frameShadow">
            <enum>QFrame::Plain</enum>
           </property>
@@ -101,7 +101,7 @@
          </widget>
         </item>
         <item>
-         <widget class="BodyLabel" name="BodyLabel_2">
+         <widget class="BodyLabel" name="file_path">
           <property name="text">
            <string>file url</string>
           </property>

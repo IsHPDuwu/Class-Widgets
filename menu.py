@@ -6,13 +6,12 @@ import sys
 from copy import deepcopy
 from pathlib import Path
 from shutil import rmtree
-import math
 
 from PyQt5 import uic, QtCore
 from PyQt5.QtCore import Qt, QTime, QUrl, QDate, pyqtSignal
 from PyQt5.QtGui import QIcon, QDesktopServices, QColor
 from PyQt5.QtWidgets import QApplication, QHeaderView, QTableWidgetItem, QLabel, QHBoxLayout, QSizePolicy, \
-    QSpacerItem, QFileDialog, QVBoxLayout, QScroller, QListWidget, QWidget, QListWidgetItem
+    QSpacerItem, QFileDialog, QVBoxLayout, QScroller, QWidget, QListWidgetItem
 from loguru import logger
 from qfluentwidgets import (
     Theme, setTheme, FluentWindow, FluentIcon as fIcon, ToolButton, ListWidget, ComboBox, CaptionLabel,
@@ -21,7 +20,7 @@ from qfluentwidgets import (
     CalendarPicker, BodyLabel, ColorDialog, isDarkTheme, TimeEdit, EditableComboBox, MessageBoxBase,
     SearchLineEdit, Slider, PlainTextEdit, ToolTipFilter, ToolTipPosition, RadioButton, HyperlinkLabel,
     PrimaryDropDownPushButton, Action, RoundMenu, CardWidget, ImageLabel, StrongBodyLabel,
-    TransparentDropDownToolButton, Dialog, SmoothScrollArea, TransparentToolButton, HyperlinkButton, TableWidget
+    TransparentDropDownToolButton, Dialog, SmoothScrollArea, TransparentToolButton, TableWidget
 )
 
 import conf
@@ -628,11 +627,21 @@ class SettingsMenu(FluentWindow):
         spin_prepare_time.valueChanged.connect(self.save_prepare_time)  # 准备时间
 
     class cf_FileItem(QWidget,uic.loadUiType(f'{base_directory}/view/menu/file_item.ui')[0]):
-        def __init__(self, file_name, file_path):
+        def __init__(self, file_name='', file_path=''):
             super().__init__()
             self.setupUi(self) 
-            self.file_name = 
+            self.file_name = self.findChild(StrongBodyLabel, 'file_name')
+            self.file_name.setText(file_name)
+            self.file_path = self.findChild(BodyLabel, 'file_path')
+            self.file_path.setText(file_path)
         
+    def cf_add_item(self, file_name, file_path):
+        item_widget = self.cf_FileItem(file_name, file_path)
+        item = QListWidgetItem()
+        item.setSizeHint(item_widget.sizeHint())
+        self.table.addItem(item)
+        self.table.setItemWidget(item, item_widget)
+    
     def setup_configs_interface(self):  # 配置界面
         self.config_url = self.cfInterface.findChild(LineEdit, 'config_url')
 
@@ -651,17 +660,10 @@ class SettingsMenu(FluentWindow):
         self.table.setFlow(ListWidget.LeftToRight)  # 设置从左到右排列
         self.table.setResizeMode(ListWidget.Adjust)  # 调整大小
         self.table.setWrapping(True)  # 允许换行
-        # self.table.setSelectionMode(QAbstractItemView.SingleSelection)
 
-        def test():
-            item_widget = self.cf_FileItem()
-            item = QListWidgetItem()
-            item.setSizeHint(item_widget.sizeHint())
-            self.table.addItem(item)
-
-            self.table.setItemWidget(item, item_widget)
-
-        [test() for i in range(10)]
+        for file in list_.get_schedule_config():
+            self.cf_add_item(file,'local')
+        
         # self.conf_combo = self.cfInterface.findChild(ComboBox, 'conf_combo')
         # self.conf_combo.clear()
         # self.conf_combo.addItems(list_.get_schedule_config())
