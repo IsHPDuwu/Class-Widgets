@@ -636,7 +636,12 @@ class SettingsMenu(FluentWindow):
             self.file_path.setText(file_path)
             self.settings = self.findChild(ToolButton, 'file_item_settings')
             self.settings.setIcon(fIcon.SETTING)
+            self.enabled = self.findChild(QWidget, 'file_enabled')
             self.id = id
+            self.set_enabled(False)
+
+        def set_enabled(self, enabled):
+            self.enabled.setStyleSheet(f"background-color: {"#39c5bb" if enabled else "#c42b1c"}")
         
     def cf_add_item(self, file_name, file_path, id):
         item_widget = self.cf_FileItem(file_name, file_path, id)
@@ -644,6 +649,7 @@ class SettingsMenu(FluentWindow):
         item.setSizeHint(QSize(200,60))
         self.table.addItem(item)
         self.table.setItemWidget(item, item_widget)
+        return item_widget
     
     def setup_configs_interface(self):  # 配置界面
         self.config_url = self.cfInterface.findChild(LineEdit, 'config_url')
@@ -664,12 +670,13 @@ class SettingsMenu(FluentWindow):
         self.table.setWrapping(True)  # 允许换行
 
         config_list = list_.get_schedule_config()
+        self.cf_file_list = []
 
         for id in range(len(config_list)):
-            self.cf_add_item(config_list[id],'local',id)
+            self.cf_file_list.append(self.cf_add_item(config_list[id],'local',id))
 
         self.table.setCurrentRow(list_.get_schedule_config().index(config_center.read_conf('General', 'schedule')))
-        
+        self.cf_file_list[list_.get_schedule_config().index(config_center.read_conf('General', 'schedule'))].set_enabled(True)
         # self.conf_combo = self.cfInterface.findChild(ComboBox, 'conf_combo')
         # self.conf_combo.clear()
         # self.conf_combo.addItems(list_.get_schedule_config())
