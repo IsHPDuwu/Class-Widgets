@@ -6,6 +6,7 @@ import sys
 from copy import deepcopy
 from pathlib import Path
 from shutil import rmtree
+import math
 
 from PyQt5 import uic, QtCore
 from PyQt5.QtCore import Qt, QTime, QUrl, QDate, pyqtSignal
@@ -626,38 +627,12 @@ class SettingsMenu(FluentWindow):
         spin_prepare_time.setValue(int(config_center.read_conf('Toast', 'prepare_minutes')))
         spin_prepare_time.valueChanged.connect(self.save_prepare_time)  # 准备时间
 
-    class cf_FileItem(QWidget):
-        def __init__(self, filename, source, parent=None):
-            super().__init__(parent)
-            layout = QHBoxLayout()
-            
-            # Green bar on the left
-            self.green_bar = QWidget(self)
-            self.green_bar.setStyleSheet("background-color: green;")
-            self.green_bar.setFixedWidth(5)  # Set the width of the green bar
-            
-            self.label_name = QLabel(f"<b>{filename}</b>")
-            self.label_source = QLabel(source)
-            self.setting_button = ToolButton(fIcon.SETTING)
-            
-            layout.addWidget(self.green_bar)  # Add the green bar first
-            layout.addWidget(self.label_name)
-            layout.addWidget(self.label_source)
-            layout.addWidget(self.setting_button)
-            
-            self.setLayout(layout)
-            self.set_selected(False)  # Default to not selected
-
-        def set_selected(self, selected):
-            # Modify appearance when selected
-            if selected:
-                self.setStyleSheet("background-color: lightblue;")  # Modify selected background color
-                self.green_bar.setVisible(True)  # Show the green bar when selected
-            else:
-                self.setStyleSheet("background-color: none;")  # Reset background color when unselected
-                self.green_bar.setVisible(False)  # Hide the green bar when unselected
-
-
+    class cf_FileItem(QWidget,uic.loadUiType(f'{base_directory}/view/menu/file_item.ui')[0]):
+        def __init__(self, file_name, file_path):
+            super().__init__()
+            self.setupUi(self) 
+            self.file_name = 
+        
     def setup_configs_interface(self):  # 配置界面
         self.config_url = self.cfInterface.findChild(LineEdit, 'config_url')
 
@@ -670,16 +645,16 @@ class SettingsMenu(FluentWindow):
         self.import_from_file = self.cfInterface.findChild(PushButton, 'config_import')
         # self.import_from_file.clicked.connect(self.cf_import_from_file)  # 从文件导入
 
-        self.table:QListWidget = self.cfInterface.findChild(QListWidget, 'config_table')
+        self.table:ListWidget = self.cfInterface.findChild(ListWidget, 'config_table')
         # self.table.cellClicked.connect(self.cf_table_cell_clicked)  # 表格点
-        self.table.setViewMode(QListWidget.IconMode)  # 允许横向排列
-        self.table.setFlow(QListWidget.LeftToRight)  # 设置从左到右排列
-        self.table.setResizeMode(QListWidget.Adjust)  # 调整大小
+        self.table.setViewMode(ListWidget.IconMode)  # 允许横向排列
+        self.table.setFlow(ListWidget.LeftToRight)  # 设置从左到右排列
+        self.table.setResizeMode(ListWidget.Adjust)  # 调整大小
         self.table.setWrapping(True)  # 允许换行
         # self.table.setSelectionMode(QAbstractItemView.SingleSelection)
 
         def test():
-            item_widget = self.cf_FileItem("new_file.yaml", "local file (just now)")
+            item_widget = self.cf_FileItem()
             item = QListWidgetItem()
             item.setSizeHint(item_widget.sizeHint())
             self.table.addItem(item)

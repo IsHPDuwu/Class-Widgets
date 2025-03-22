@@ -96,7 +96,7 @@
         </layout>
        </item>
        <item>
-        <widget class="QListWidget" name="config_table"/>
+        <widget class="ListWidget" name="config_table"/>
        </item>
       </layout>
      </widget>
@@ -129,6 +129,11 @@
   <customwidget>
    <class>TableWidget</class>
    <extends>QTableWidget</extends>
+   <header>qfluentwidgets</header>
+  </customwidget>
+  <customwidget>
+   <class>ListWidget</class>
+   <extends>QListWidget</extends>
    <header>qfluentwidgets</header>
   </customwidget>
  </customwidgets>
