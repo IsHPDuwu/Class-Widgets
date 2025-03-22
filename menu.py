@@ -682,11 +682,14 @@ class SettingsMenu(FluentWindow):
     
     def setup_configs_interface(self):  # 配置界面
         self.config_url = self.cfInterface.findChild(LineEdit, 'config_url')
+        self.config_url.setEnabled(False)
 
         self.config_download = self.cfInterface.findChild(PushButton, 'config_download')
+        self.config_download.setEnabled(False)
         # self.config_download.clicked.connect(self.cf_download_config)  # 下载配置
         
         self.update_all = self.cfInterface.findChild(PushButton, 'config_update_all')
+        self.update_all.setEnabled(False)
         # self.update_all.clicked.connect(self.cf_update_all)  # 更新全部
 
         self.config_new = self.cfInterface.findChild(PushButton, 'config_new')
