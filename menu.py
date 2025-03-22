@@ -712,17 +712,6 @@ class SettingsMenu(FluentWindow):
         self.table.setCurrentRow(list_.get_schedule_config().index(config_center.read_conf('General', 'schedule')))
         self.table.currentRowChanged.connect(self.cf_change_file)
 
-
-        # cf_export_schedule = self.findChild(PushButton, 'ex_schedule')
-        # cf_export_schedule.clicked.connect(self.cf_export_schedule)  # 导出课程表
-        # cf_open_schedule_folder = self.findChild(PushButton, 'open_schedule_folder')  # 打开课程表文件夹
-        # cf_open_schedule_folder.clicked.connect(lambda: open_dir(os.path.join(os.path.abspath('.'), 'config/schedule')))
-
-        # cf_export_schedule_cses = self.findChild(PushButton, 'ex_schedule_cses')
-        # cf_export_schedule_cses.clicked.connect(self.cf_export_schedule_cses)  # 导出课程表（CSES）
-        # cf_what_is_cses = self.findChild(HyperlinkButton, 'what_is')
-        # cf_what_is_cses.setUrl(QUrl('https://github.com/CSES-org/CSES'))
-
     def setup_customization_interface(self):
         ct_scroll = self.findChild(SmoothScrollArea, 'ct_scroll')  # 触摸屏适配
         QScroller.grabGesture(ct_scroll.viewport(), QScroller.LeftMouseButtonGesture)
@@ -1301,9 +1290,9 @@ class SettingsMenu(FluentWindow):
             try:
                 with open(save_path, 'w', encoding='utf-8') as f:
                     json.dump(cw_data, f, ensure_ascii=False, indent=4)
-                    self.conf_combo.addItem(file_name.replace('.yaml', '.json'))
+                    self.cf_file_list.append(self.cf_add_item(file_name.replace('.yaml', '.json'),'local',len(self.cf_file_list)))
                     alert = MessageBox('您已成功导入 CSES 课程表配置文件',
-                                       '请在“高级选项”中手动切换您的配置文件。', self)
+                                       '请手动切换您的配置文件。', self)
                     alert.cancelButton.hide()
                     alert.buttonLayout.insertStretch(0, 1)
                     alert.exec()
@@ -1347,9 +1336,9 @@ class SettingsMenu(FluentWindow):
                 return self.cf_import_schedule_cses(file_path)
             file_name = file_path.split("/")[-1]
             if list_.import_schedule(file_path, file_name):
-                self.conf_combo.addItem(file_name)
+                self.cf_file_list.append(self.cf_add_item(file_name,'local',len(self.cf_file_list)))
                 alert = MessageBox('您已成功导入课程表配置文件',
-                                   '请在“高级选项”中手动切换您的配置文件。', self)
+                                   '请手动切换您的配置文件。', self)
                 alert.cancelButton.hide()  # 隐藏取消按钮，必须重启
                 alert.buttonLayout.insertStretch(0, 1)
             else:
@@ -1454,23 +1443,6 @@ class SettingsMenu(FluentWindow):
             print(f'新建配置文件时发生错误：{e}')
             logger.error(f'新建配置文件时发生错误：{e}')
 
-    def cf_change_file_name(self):
-        try:
-            conf_name = self.findChild(LineEdit, 'conf_name')
-            old_name = config_center.schedule_name
-            new_name = conf_name.text()
-            os.rename(f'{base_directory}/config/schedule/{old_name}',
-                      f'{base_directory}/config/schedule/{new_name}.json')  # 重命名
-            config_center.write_conf('General', 'schedule', f'{new_name}.json')
-            config_center.schedule_name = new_name + '.json'
-            conf_combo = self.findChild(ComboBox, 'conf_combo')
-            conf_combo.clear()
-            conf_combo.addItems(list_.get_schedule_config())
-            conf_combo.setCurrentIndex(list_.get_schedule_config().index(f'{new_name}.json'))
-        except Exception as e:
-            print(f'修改课程文件名称时发生错误：{e}')
-            logger.error(f'修改课程文件名称时发生错误：{e}')
-
     def cf_change_file(self):  # 切换课程文件
         try:
 
@@ -1484,10 +1456,10 @@ class SettingsMenu(FluentWindow):
                     icon=InfoBarIcon.ERROR,
                     title='错误！',
                     content=f"列表选项异常！{self.cf_file_list[self.table.currentIndex().row()].file_name.text()}",
-                    # target=self.conf_combo,
+                    target=self.table,
                     parent=self,
                     isClosable=True,
-                    aniType=FlyoutAnimationType.PULL_UP
+                    aniType=FlyoutAnimationType.DROP_DOWN
                 )
                 return
             global loaded_data
