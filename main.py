@@ -740,6 +740,8 @@ class WidgetsManager:
         self.start_pos_x = 0  # 小组件起始位置
         self.start_pos_y = 0
 
+        self.hide_status = None
+
     def sync_widget_animation(self, target_pos):
         for widget in self.widgets:
             if widget.path == 'widget-current-activity.ui':
@@ -751,10 +753,12 @@ class WidgetsManager:
         self.spacing = conf.load_theme_config(theme)['spacing']
 
         self.get_start_pos()
+        cnt_all = {}
 
         # 添加小组件实例
         for w in range(len(self.widgets_list)):
-            widget = DesktopWidget(self, self.widgets_list[w], True if w == 0 else False)
+            cnt_all[self.widgets_list[w]] = cnt_all.get(self.widgets_list[w], -1) + 1
+            widget = DesktopWidget(self, self.widgets_list[w], True if w == 0 else False,cnt = cnt_all[self.widgets_list[w]], position=self.get_widget_pos("", w), widget_cnt = w)
             self.widgets.append(widget)
 
         self.create_widgets()
@@ -794,14 +798,14 @@ class WidgetsManager:
             # 调整窗口尺寸
             width = self.get_widget_width(widget.path)
             height = self.get_widgets_height()
-            pos_x = self.get_widget_pos(widget.path)[0]
+            pos_x = self.get_widget_pos(widget.path, widget.widget_cnt)[0]
             op = int(config_center.read_conf('General', 'opacity')) / 100
 
             if widget.animation is None:
                 widget.widget_transition(pos_x, width, height, op)
 
-    def get_widget_pos(self, path):  # 获取小组件位置
-        num = self.widgets_list.index(path)
+    def get_widget_pos(self, path, cnt=None):  # 获取小组件位置
+        num = self.widgets_list.index(path) if cnt is None else cnt
         self.get_start_pos()
         pos_x = self.start_pos_x + self.spacing * num
         for i in range(num):
@@ -1433,8 +1437,11 @@ class FloatingWidget(QWidget):  # 浮窗
         self.close()
 
 class DesktopWidget(QWidget):  # 主要小组件
-    def __init__(self, parent=WidgetsManager, path='widget-time.ui', enable_tray=False):
+    def __init__(self, parent=WidgetsManager, path='widget-time.ui', enable_tray=False, cnt=0, position=None, widget_cnt = None):
         super().__init__()
+
+        self.cnt = cnt
+        self.widget_cnt = widget_cnt
 
         self.tray_menu = None
 
@@ -1447,9 +1454,10 @@ class DesktopWidget(QWidget):  # 主要小组件
         self.last_color_mode = config_center.read_conf('General', 'color_mode')
         self.w = 100
 
-        self.position = parent.get_widget_pos(self.path)
+        self.position = parent.get_widget_pos(self.path) if position is None else position
         self.animation = None
         self.opacity_animation = None
+        mgr.hide_status = None
 
         try:
             self.w = conf.load_theme_config(theme)['widget_width'][self.path]
@@ -1496,7 +1504,7 @@ class DesktopWidget(QWidget):  # 主要小组件
         elif path == 'widget-next-activity.ui':  # 接下来的活动
             self.nl_text = self.findChild(QLabel, 'next_lesson_text')
 
-        elif path == 'widget-countdown-custom.ui':  # 自定义倒计时
+        elif path == 'widget-countdown-day.ui':  # 自定义倒计时
             self.custom_title = self.findChild(QLabel, 'countdown_custom_title')
             self.custom_countdown = self.findChild(QLabel, 'custom_countdown')
 
@@ -1664,6 +1672,16 @@ class DesktopWidget(QWidget):  # 主要小组件
                     mgr.decide_to_hide()
                 else:
                     mgr.show_windows()
+        elif config_center.read_conf('General', 'hide') == '3':
+            if reason == QSystemTrayIcon.ActivationReason.Trigger:
+                if mgr.state:
+                    mgr.decide_to_hide()
+                    mgr.hide_status = (True, 1)
+                else:
+                    mgr.show_windows()
+                    mgr.hide_status = (True, 0)
+                
+
 
     def rightReleaseEvent(self, event):  # 右键事件
         event.ignore()
@@ -1683,7 +1701,7 @@ class DesktopWidget(QWidget):  # 主要小组件
         get_excluded_lessons()
         get_next_lessons()
 
-        if config_center.read_conf('General', 'hide') == '1':  # 上课自动隐藏
+        if (hide_mode:=config_center.read_conf('General', 'hide')) == '1':  # 上课自动隐藏
             if current_state:
                 if not current_lesson_name in excluded_lessons:
                     mgr.decide_to_hide()
@@ -1691,11 +1709,27 @@ class DesktopWidget(QWidget):  # 主要小组件
                     mgr.show_windows()
             else:
                 mgr.show_windows()
-        elif config_center.read_conf('General', 'hide') == '2':  # 最大化/全屏自动隐藏
+        elif hide_mode == '2': # 最大化/全屏自动隐藏
             if check_windows_maximize() or check_fullscreen():
                 mgr.decide_to_hide()
             else:
                 mgr.show_windows()
+        elif hide_mode == '3': # 灵活隐藏
+            if mgr.hide_status is None:
+                mgr.hide_status = (False, current_state)
+            elif mgr.hide_status[0] and mgr.hide_status[1] == current_state:
+                mgr.hide_status = (False, current_state)
+            elif not mgr.hide_status[0]:
+                mgr.hide_status = (False, current_state)
+            if mgr.hide_status[1]:
+                if not current_lesson_name in excluded_lessons:
+                    mgr.decide_to_hide()
+                else:
+                    mgr.show_windows()
+            else:
+                mgr.show_windows()
+
+            
 
         if conf.is_temp_week():  # 调休日
             current_week = config_center.read_conf('Temp', 'set_week')
@@ -1751,8 +1785,9 @@ class DesktopWidget(QWidget):  # 主要小组件
                 self.ac_title.setText(cd_list[0])
                 self.countdown_progress_bar.setValue(cd_list[2])
 
-        if path == 'widget-countdown-custom.ui':  # 自定义倒计时
-            self.custom_title.setText(f'距离 {config_center.read_conf("Date", "cd_text_custom")} 还有')
+        if path == 'widget-countdown-day.ui':  # 自定义倒计时
+            conf.update_countdown(self.cnt)
+            self.custom_title.setText(f'距离 {conf.get_cd_text_custom()} 还有')
             self.custom_countdown.setText(conf.get_custom_countdown())
         self.update()
 
@@ -1781,7 +1816,7 @@ class DesktopWidget(QWidget):  # 主要小组件
 
     def update_weather_data(self, weather_data):  # 更新天气数据(已兼容多api)
         global weather_name, temperature, weather_data_temp
-        if type(weather_data) is dict and hasattr(self, 'weather_icon'):
+        if type(weather_data) is dict and hasattr(self, 'weather_icon') and 'error' not in weather_data:
             logger.success('已获取天气数据')
             alert_data = weather_data.get('alert')
             weather_data = weather_data.get('now')
@@ -1816,6 +1851,23 @@ class DesktopWidget(QWidget):  # 主要小组件
                 logger.error(f'天气组件出错：{e}')
         else:
             logger.error(f'获取天气数据出错：{weather_data}')
+            try: 
+                if hasattr(self, 'weather_icon'):
+                    self.weather_icon.setPixmap(QPixmap(f'{base_directory}/img/weather/99.svg'))
+                    self.alert_icon.hide()
+                    self.temperature.setText('--°')
+                    current_city = self.findChild(QLabel, 'current_city')
+                    if current_city:
+                        current_city.setText(f"{db.search_by_num(config_center.read_conf('Weather', 'city'))} · 未知")
+                    if hasattr(self, 'backgnd'):
+                        update_stylesheet = re.sub(
+                            r'border-image: url\((.*?)\);',
+                            f"border-image: url({db.get_weather_stylesheet('99')});",
+                            self.backgnd.styleSheet()
+                        )
+                        self.backgnd.setStyleSheet(update_stylesheet)
+            except Exception as e:
+                logger.error(f'天气图标设置失败：{e}')
 
     def open_extra_menu(self):
         global ex_menu
@@ -1945,6 +1997,14 @@ class DesktopWidget(QWidget):  # 主要小组件
                 mgr.decide_to_hide()
             else:
                 mgr.show_windows()
+        elif config_center.read_conf('General', 'hide') == '3':  # 隐藏
+            if mgr.state:
+                mgr.decide_to_hide()
+                mgr.hide_status = (True, 1)
+            else:
+                mgr.show_windows()
+                mgr.hide_status = (True, 0)
+            
         else:
             event.ignore()
 

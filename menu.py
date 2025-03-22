@@ -15,6 +15,7 @@ from PyQt5.QtCore import Qt, pyqtSignal, QModelIndex, QItemSelectionModel, pyqtP
 from PyQt5.QtGui import QPainter
 from PyQt5.QtWidgets import QApplication, QHeaderView, QTableWidgetItem, QLabel, QHBoxLayout, QSizePolicy, \
     QSpacerItem, QFileDialog, QVBoxLayout, QScroller, QWidget, QListWidgetItem, QStyledItemDelegate
+from packaging.version import Version
 from loguru import logger
 from qfluentwidgets import (
     Theme, setTheme, FluentWindow, FluentIcon as fIcon, ToolButton, ListWidget, ComboBox, CaptionLabel,
@@ -64,6 +65,8 @@ schedule_dict = {}  # 对应时间线的课程表
 schedule_even_dict = {}  # 对应时间线的课程表（双周）
 
 timeline_dict = {}  # 时间线字典
+
+countdown_dict = {}
 
 
 def open_plaza():
@@ -187,6 +190,14 @@ def se_load_item():
     schedule_dict = load_schedule_dict(schedule, part, part_name)
     schedule_even_dict = load_schedule_dict(schedule_even, part, part_name)
 
+def cd_load_item():
+    global countdown_dict
+    text = config_center.read_conf('Date','cd_text_custom').split(',')
+    date = config_center.read_conf('Date','countdown_date').split(',')
+    if len(text) != len(date):
+        countdown_dict = {"Err": f"len(cd_text_custom) (={len(text)}) != len(countdown_date) (={len(date)})"}
+        raise Exception(f"len(cd_text_custom) (={len(text)}) != len(countdown_date) (={len(date)})"f"len(cd_text_custom) (={len(text)}) != len(countdown_date) (={len(date)}) \n 请检查 config.ini [Date] 项！！")
+    countdown_dict = dict(zip(date, text))
 
 class selectCity(MessageBoxBase):  # 选择城市
     def __init__(self, parent=None):
@@ -297,6 +308,7 @@ class PluginCard(CardWidget):  # 插件卡片
         self.moreButton = TransparentDropDownToolButton()
         self.moreMenu = RoundMenu(parent=self.moreButton)
         self.settingsBtn = TransparentToolButton()  # 设置按钮
+        self.settingsBtn.hide()
 
         self.hBoxLayout = QHBoxLayout(self)
         self.hBoxLayout_Title = QHBoxLayout(self)
@@ -305,21 +317,20 @@ class PluginCard(CardWidget):  # 插件卡片
         self.moreMenu.addActions([
             Action(
                 fIcon.FOLDER, f'打开“{title}”插件文件夹',
-                triggered=lambda: open_dir(os.path.join(os.getcwd(), conf.PLUGINS_DIR, self.plugin_dir))
+                triggered=lambda: open_dir(os.path.join(base_directory, conf.PLUGINS_DIR, self.plugin_dir))
             ),
             Action(
                 fIcon.DELETE, f'卸载“{title}”插件',
                 triggered=self.remove_plugin
             )
         ])
-        if enable_settings:
-            self.moreMenu.addSeparator()
-            self.moreMenu.addAction(Action(fIcon.SETTING, f'“{title}”插件设置', triggered=self.show_settings))
-        else:
-            self.settingsBtn.hide()
 
         if plugin_dir in enabled_plugins['enabled_plugins']:  # 插件是否启用
             self.enableButton.setChecked(True)
+            if enable_settings:
+                self.moreMenu.addSeparator()
+                self.moreMenu.addAction(Action(fIcon.SETTING, f'“{title}”插件设置', triggered=self.show_settings))
+                self.settingsBtn.show()
 
         self.setFixedHeight(73)
         self.iconWidget.setFixedSize(48, 48)
@@ -415,7 +426,7 @@ class PluginCard(CardWidget):  # 插件卡片
             except Exception as e:
                 logger.error(f"保存已安装插件失败：{e}")
             try:
-                rmtree(os.path.join(os.getcwd(), conf.PLUGINS_DIR, self.plugin_dir))  # 删除插件
+                rmtree(os.path.join(base_directory, conf.PLUGINS_DIR, self.plugin_dir))  # 删除插件
                 self.setParent(None)
                 self.deleteLater()  # 删除卡片
             except Exception as e:
@@ -488,6 +499,8 @@ class SettingsMenu(FluentWindow):
         self.teInterface.setObjectName("teInterface")
         self.seInterface = uic.loadUi(f'{base_directory}/view/menu/schedule_edit.ui')  # 课程表编辑
         self.seInterface.setObjectName("seInterface")
+        self.cdInterface = uic.loadUi(f'{base_directory}/view/menu/countdown_custom_edit.ui') # 倒计日编辑
+        self.cdInterface.setObjectName("cdInterface")
         self.adInterface = uic.loadUi(f'{base_directory}/view/menu/advance.ui')  # 高级选项
         self.adInterface.setObjectName("adInterface")
         self.ifInterface = uic.loadUi(f'{base_directory}/view/menu/about.ui')  # 关于
@@ -522,6 +535,7 @@ class SettingsMenu(FluentWindow):
         self.setup_sound_interface()
         self.setup_help_interface()
         self.setup_plugin_mgr_interface()
+        self.setup_countdown_edit()
 
     # 初始化界面
     def setup_plugin_mgr_interface(self):
@@ -546,7 +560,7 @@ class SettingsMenu(FluentWindow):
 
         plugin_card_layout = self.findChild(QVBoxLayout, 'plugin_card_layout')
         open_plugin_folder = self.findChild(PushButton, 'open_plugin_folder')
-        open_plugin_folder.clicked.connect(lambda: open_dir(os.path.join(os.getcwd(), conf.PLUGINS_DIR)))  # 打开插件目录
+        open_plugin_folder.clicked.connect(lambda: open_dir(os.path.join(base_directory, conf.PLUGINS_DIR)))  # 打开插件目录
 
         if not p_loader.plugins_settings:  # 若插件设置为空
             p_loader.load_plugins()  # 加载插件设置
@@ -728,18 +742,18 @@ class SettingsMenu(FluentWindow):
         save_config_button = self.findChild(PrimaryPushButton, 'save_config')
         save_config_button.clicked.connect(self.ct_save_widget_config)
 
-        set_wcc_title = self.findChild(LineEdit, 'set_wcc_title')  # 倒计时标题
-        set_wcc_title.setText(config_center.read_conf('Date', 'cd_text_custom'))
-        set_wcc_title.textChanged.connect(
-            lambda: config_center.write_conf('Date', 'cd_text_custom', set_wcc_title.text()))
+        # set_wcc_title = self.findChild(LineEdit, 'set_wcc_title')  # 倒计时标题
+        # set_wcc_title.setText(config_center.read_conf('Date', 'cd_text_custom'))
+        # set_wcc_title.textChanged.connect(
+        #     lambda: config_center.write_conf('Date', 'cd_text_custom', set_wcc_title.text()))
 
-        set_countdown_date = self.findChild(CalendarPicker, 'set_countdown_date')  # 倒计时日期
-        if config_center.read_conf('Date', 'countdown_date') != '':
-            set_countdown_date.setDate(QDate.fromString(config_center.read_conf('Date', 'countdown_date'), 'yyyy-M-d'))
-        set_countdown_date.dateChanged.connect(
-            lambda: config_center.write_conf(
-                'Date', 'countdown_date', set_countdown_date.date.toString('yyyy-M-d'))
-        )
+        # set_countdown_date = self.findChild(CalendarPicker, 'set_countdown_date')  # 倒计时日期
+        # if config_center.read_conf('Date', 'countdown_date') != '':
+        #     set_countdown_date.setDate(QDate.fromString(config_center.read_conf('Date', 'countdown_date'), 'yyyy-M-d'))
+        # set_countdown_date.dateChanged.connect(
+        #     lambda: config_center.write_conf(
+        #         'Date', 'countdown_date', set_countdown_date.date.toString('yyyy-M-d'))
+        # )
 
         set_ac_color = self.findChild(PushButton, 'set_ac_color')  # 主题色
         set_ac_color.clicked.connect(self.ct_set_ac_color)
@@ -747,7 +761,7 @@ class SettingsMenu(FluentWindow):
         set_fc_color.clicked.connect(self.ct_set_fc_color)
 
         open_theme_folder = self.findChild(HyperlinkLabel, 'open_theme_folder')  # 打开主题文件夹
-        open_theme_folder.clicked.connect(lambda: open_dir(os.path.join(os.getcwd(), 'ui')))
+        open_theme_folder.clicked.connect(lambda: open_dir(os.path.join(base_directory, 'ui')))
 
         select_theme_combo = self.findChild(ComboBox, 'combo_theme_select')  # 主题选择
         select_theme_combo.addItems(list_.theme_names)
@@ -964,6 +978,13 @@ class SettingsMenu(FluentWindow):
                      text_scale_factor.setText(str(slider_scale_factor.value()) + '%'))
         )  # 保存缩放系数
 
+        what_is_hide_mode_3:HyperlinkButton = self.adInterface.findChild(HyperlinkButton, 'what_is_hide_mode_3')
+        def what_is_hide_mode_3_clicked():
+            w = MessageBox('灵活模式', '灵活模式为上课时自动隐藏，可手动改变隐藏状态，当前课程状态（上课/课间）改变后会清除手动隐藏状态，重新转为自动隐藏。', self)
+            w.cancelButton.hide()
+            w.exec()
+        what_is_hide_mode_3.clicked.connect(what_is_hide_mode_3_clicked)
+        
     def setup_schedule_edit(self):
         se_load_item()
         se_set_button = self.findChild(ToolButton, 'set_button')
@@ -1192,8 +1213,7 @@ class SettingsMenu(FluentWindow):
     def ct_add_widget(self):
         widgets_list = self.findChild(ListWidget, 'widgets_list')
         widgets_combo = self.findChild(ComboBox, 'widgets_combo')
-        if not widgets_list.findItems(widgets_combo.currentText(), QtCore.Qt.MatchFlag.MatchExactly):
-            widgets_list.addItem(widgets_combo.currentText())
+        widgets_list.addItem(widgets_combo.currentText())
         self.ct_update_preview()
 
     def ct_remove_widget(self):
@@ -1255,15 +1275,19 @@ class SettingsMenu(FluentWindow):
                     f"检查更新失败！\n{version['error']}"
                 )
             return False
+            
+        
         channel = int(config_center.read_conf("Other", "version_channel"))
         new_version = version['version_release' if channel == 0 else 'version_beta']
+        local_version = config_center.read_conf("Other", "version")
 
-        if new_version == config_center.read_conf("Other", "version"):
-            self.version.setText(f'当前版本：{new_version}\n当前为最新版本')
+        logger.debug(f"服务端版本: {Version(new_version)}，本地版本: {Version(local_version)}")
+        if Version(new_version) <= Version(local_version):
+            self.version.setText(f'当前版本：{local_version}\n当前为最新版本')
         else:
-            self.version.setText(f'当前版本：{config_center.read_conf("Other", "version")}\n最新版本：{new_version}')
+            self.version.setText(f'当前版本：{local_version}\n最新版本：{new_version}')
 
-            if new_version != config_center.read_conf("Other", "version") and utils.tray_icon:
+            if utils.tray_icon:
                 utils.tray_icon.push_update_notification(f"新版本速递：{new_version}")
 
     def cf_import_schedule_cses(self, file_path):  # 导入课程表（CSES）
@@ -1983,6 +2007,93 @@ class SettingsMenu(FluentWindow):
                 f'未添加-{name_list[1]}'
             )
 
+    def cd_edit_item(self):
+        cd_countdown_list = self.findChild(ListWidget, 'countdown_list')
+        cd_text_cd = self.findChild(LineEdit, 'text_cd')
+        cd_set_countdown_date = self.findChild(CalendarPicker, 'set_countdown_date')
+        selected_items = cd_countdown_list.selectedItems()
+        if selected_items:
+            selected_item = selected_items[0]
+            selected_item.setText(
+                f"{cd_set_countdown_date.text().replace('/', '-')} - {cd_text_cd.text()}"
+            )
+        
+
+    def cd_delete_item(self):
+        cd_countdown_list = self.findChild(ListWidget, 'countdown_list')
+        selected_items = cd_countdown_list.selectedItems()
+        if selected_items:
+            item = selected_items[0]
+            cd_countdown_list.takeItem(cd_countdown_list.row(item))
+
+    def cd_add_item(self):
+        cd_countdown_list = self.findChild(ListWidget, 'countdown_list')
+        cd_text_cd = self.findChild(LineEdit, 'text_cd')
+        cd_set_countdown_date = self.findChild(CalendarPicker, 'set_countdown_date')
+        cd_countdown_list.addItem(
+            f'{cd_set_countdown_date.text().replace("/", "-")} - {cd_text_cd.text()}'
+        )
+
+    def cd_save_item(self):
+        cd_countdown_list = self.findChild(ListWidget, 'countdown_list')
+        countdown_date = []
+        cd_text_custom = []
+
+        for i in range(cd_countdown_list.count()):
+            item = cd_countdown_list.item(i) 
+            text = item.text().split(' - ')
+            countdown_date.append(text[0])
+            cd_text_custom.append(text[1])
+        
+        Flyout.create(
+                icon=InfoBarIcon.SUCCESS,
+                title='保存成功',
+                content=f"已保存至 ./config.ini",
+                target=self.findChild(PrimaryPushButton, 'save_countdown'),
+                parent=self,
+                isClosable=True,
+                aniType=FlyoutAnimationType.PULL_UP
+            )
+        
+        config_center.write_conf('Date', 'countdown_date', ','.join(countdown_date))
+        config_center.write_conf('Date', 'cd_text_custom', ','.join(cd_text_custom))
+
+    def setup_countdown_edit(self):
+        cd_load_item()
+        logger.debug(f"{countdown_dict}")
+        cd_set_button = self.findChild(ToolButton, 'set_button_cd')
+        cd_set_button.setIcon(fIcon.EDIT)
+        cd_set_button.setToolTip('编辑倒计日')
+        cd_set_button.installEventFilter(ToolTipFilter(cd_set_button, showDelay=300, position=ToolTipPosition.TOP))
+        cd_set_button.clicked.connect(self.cd_edit_item)
+
+        cd_clear_button = self.findChild(ToolButton, 'clear_button_cd')
+        cd_clear_button.setIcon(fIcon.DELETE)
+        cd_clear_button.setToolTip('删除倒计日')
+        cd_clear_button.installEventFilter(ToolTipFilter(cd_clear_button, showDelay=300, position=ToolTipPosition.TOP))
+        cd_clear_button.clicked.connect(self.cd_delete_item)
+
+        cd_add_button = self.findChild(ToolButton, 'add_button_cd')
+        cd_add_button.setIcon(fIcon.ADD)
+        cd_add_button.setToolTip('添加倒计日')
+        cd_add_button.installEventFilter(ToolTipFilter(cd_add_button, showDelay=300, position=ToolTipPosition.TOP))
+        cd_add_button.clicked.connect(self.cd_add_item)
+
+        cd_schedule_list = self.findChild(ListWidget, 'countdown_list')
+        cd_schedule_list.addItems([f"{date} - {countdown_dict[date]}" for date in countdown_dict])
+        
+        cd_save_button = self.findChild(PrimaryPushButton, 'save_countdown')
+        cd_save_button.clicked.connect(self.cd_save_item)
+
+        cd_mode = self.findChild(ComboBox, 'countdown_mode')
+        cd_mode.addItems(list_.countdown_modes)
+        cd_mode.setCurrentIndex(int(config_center.read_conf('Date', 'countdown_custom_mode')))
+        cd_mode.currentIndexChanged.connect(lambda: config_center.write_conf('Date','countdown_custom_mode', str(cd_mode.currentIndex())))
+
+        cd_upd_cd = self.findChild(SpinBox, 'countdown_upd_cd')
+        cd_upd_cd.setValue(int(config_center.read_conf('Date', 'countdown_upd_cd')))
+        cd_upd_cd.valueChanged.connect(lambda: config_center.write_conf('Date','countdown_upd_cd', str(cd_upd_cd.value())))
+
     def m_start_time_changed(self):
         global morning_st
         te_m_start_time = self.findChild(TimeEdit, 'morningStartTime')
@@ -2003,6 +2114,7 @@ class SettingsMenu(FluentWindow):
         self.addSubInterface(self.spInterface, fIcon.HOME, '课表预览')
         self.addSubInterface(self.teInterface, fIcon.DATE_TIME, '时间线编辑')
         self.addSubInterface(self.seInterface, fIcon.EDUCATION, '课程表编辑')
+        self.addSubInterface(self.cdInterface, fIcon.CALENDAR, '倒计日编辑')
         self.addSubInterface(self.cfInterface, fIcon.FOLDER, '配置文件')
         self.navigationInterface.addSeparator()
         self.addSubInterface(self.hdInterface, fIcon.QUESTION, '帮助')
