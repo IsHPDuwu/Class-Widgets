@@ -646,7 +646,7 @@ class SettingsMenu(FluentWindow):
         spin_prepare_time.valueChanged.connect(self.save_prepare_time)  # 准备时间
 
     class cf_FileItem(QWidget, uic.loadUiType(f'{base_directory}/view/menu/file_item.ui')[0]):
-        def __init__(self, file_name='', file_path='local', id=None):
+        def __init__(self, file_name='', file_path='local', id=None, parent=None):
             super().__init__()
             self.setupUi(self)
             self.file_name = self.findChild(StrongBodyLabel, 'file_name')
@@ -657,9 +657,8 @@ class SettingsMenu(FluentWindow):
             self.settings.setIcon(fIcon.SETTING)
 
             menu = RoundMenu(parent=self.settings)
-            menu.addAction(Action(fIcon.DELETE, '删除', triggered=lambda: print("已发送")))
-            menu.addAction(Action(fIcon.SAVE, '导出', triggered=lambda: print("已保存")))
-            menu.addAction(Action(fIcon.SAVE, '导出为 CSES', triggered=lambda: print("已保存")))
+            menu.addAction(Action(fIcon.SAVE, '导出', triggered=parent.cf_export_schedule))
+            menu.addAction(Action(fIcon.SAVE, '导出为 CSES', triggered=parent.cf_export_schedule_cses))
 
             self.settings.setMenu(menu)
 
@@ -674,7 +673,7 @@ class SettingsMenu(FluentWindow):
             painter.drawRoundedRect(x, ph + y, 3, h - 2*ph, 1.5, 1.5)
         
     def cf_add_item(self, file_name, file_path, id):
-        item_widget = self.cf_FileItem(file_name, file_path, id)
+        item_widget = self.cf_FileItem(file_name, file_path, id, self)
         item = QListWidgetItem()
         item.setSizeHint(QSize(200,60))
         self.table.addItem(item)
