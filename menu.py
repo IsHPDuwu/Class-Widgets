@@ -8,10 +8,13 @@ from pathlib import Path
 from shutil import rmtree
 
 from PyQt5 import uic, QtCore
-from PyQt5.QtCore import Qt, QTime, QUrl, QDate, pyqtSignal, QSize
+from PyQt5.QtCore import Qt, QTime, QUrl, QDate, pyqtSignal, QSize, QRect
 from PyQt5.QtGui import QIcon, QDesktopServices, QColor
+# from PyQt5.QtPrintSupport import QPrinter
+from PyQt5.QtCore import Qt, pyqtSignal, QModelIndex, QItemSelectionModel, pyqtProperty
+from PyQt5.QtGui import QPainter
 from PyQt5.QtWidgets import QApplication, QHeaderView, QTableWidgetItem, QLabel, QHBoxLayout, QSizePolicy, \
-    QSpacerItem, QFileDialog, QVBoxLayout, QScroller, QWidget, QListWidgetItem
+    QSpacerItem, QFileDialog, QVBoxLayout, QScroller, QWidget, QListWidgetItem, QStyledItemDelegate
 from loguru import logger
 from qfluentwidgets import (
     Theme, setTheme, FluentWindow, FluentIcon as fIcon, ToolButton, ListWidget, ComboBox, CaptionLabel,
@@ -22,6 +25,8 @@ from qfluentwidgets import (
     PrimaryDropDownPushButton, Action, RoundMenu, CardWidget, ImageLabel, StrongBodyLabel,
     TransparentDropDownToolButton, Dialog, SmoothScrollArea, TransparentToolButton, TableWidget
 )
+from qfluentwidgets.common import themeColor
+from qfluentwidgets.components.widgets import ListItemDelegate
 
 import conf
 import list_ as list_
@@ -636,12 +641,15 @@ class SettingsMenu(FluentWindow):
             self.file_path.setText(file_path)
             self.settings = self.findChild(ToolButton, 'file_item_settings')
             self.settings.setIcon(fIcon.SETTING)
-            self.enabled = self.findChild(QWidget, 'file_enabled')
             self.id = id
-            self.set_enabled(False)
 
-        def set_enabled(self, enabled):
-            self.enabled.setStyleSheet(f"background-color: {"#39c5bb" if enabled else "#c42b1c"}")
+    class cf_CustomDelegate(ListItemDelegate):
+        def _drawIndicator(self, painter: QPainter, option, index):
+            # 计算绘制位置
+            x, y, h = option.rect.x(), option.rect.y(), option.rect.height()
+            ph = round(0.35*h if self.pressedRow == index.row() else 0.257*h)
+            painter.setBrush(themeColor())
+            painter.drawRoundedRect(x, ph + y, 3, h - 2*ph, 1.5, 1.5)
         
     def cf_add_item(self, file_name, file_path, id):
         item_widget = self.cf_FileItem(file_name, file_path, id)
@@ -649,6 +657,7 @@ class SettingsMenu(FluentWindow):
         item.setSizeHint(QSize(200,60))
         self.table.addItem(item)
         self.table.setItemWidget(item, item_widget)
+        
         return item_widget
     
     def setup_configs_interface(self):  # 配置界面
@@ -668,6 +677,7 @@ class SettingsMenu(FluentWindow):
         self.table.setFlow(ListWidget.LeftToRight)  # 设置从左到右排列
         self.table.setResizeMode(ListWidget.Adjust)  # 调整大小
         self.table.setWrapping(True)  # 允许换行
+        self.table.setItemDelegate(self.cf_CustomDelegate(self.table))
 
         config_list = list_.get_schedule_config()
         self.cf_file_list = []
@@ -676,7 +686,7 @@ class SettingsMenu(FluentWindow):
             self.cf_file_list.append(self.cf_add_item(config_list[id],'local',id))
 
         self.table.setCurrentRow(list_.get_schedule_config().index(config_center.read_conf('General', 'schedule')))
-        self.cf_file_list[list_.get_schedule_config().index(config_center.read_conf('General', 'schedule'))].set_enabled(True)
+        
         # self.conf_combo = self.cfInterface.findChild(ComboBox, 'conf_combo')
         # self.conf_combo.clear()
         # self.conf_combo.addItems(list_.get_schedule_config())
