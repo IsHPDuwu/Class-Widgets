@@ -657,7 +657,6 @@ class SettingsMenu(FluentWindow):
         item.setSizeHint(QSize(200,60))
         self.table.addItem(item)
         self.table.setItemWidget(item, item_widget)
-        
         return item_widget
     
     def setup_configs_interface(self):  # 配置界面
@@ -686,7 +685,7 @@ class SettingsMenu(FluentWindow):
             self.cf_file_list.append(self.cf_add_item(config_list[id],'local',id))
 
         self.table.setCurrentRow(list_.get_schedule_config().index(config_center.read_conf('General', 'schedule')))
-        
+
         # self.conf_combo = self.cfInterface.findChild(ComboBox, 'conf_combo')
         # self.conf_combo.clear()
         # self.conf_combo.addItems(list_.get_schedule_config())
