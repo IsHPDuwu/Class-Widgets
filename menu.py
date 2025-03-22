@@ -303,6 +303,7 @@ class PluginCard(CardWidget):  # 插件卡片
         self.moreButton = TransparentDropDownToolButton()
         self.moreMenu = RoundMenu(parent=self.moreButton)
         self.settingsBtn = TransparentToolButton()  # 设置按钮
+        self.settingsBtn.hide()
 
         self.hBoxLayout = QHBoxLayout(self)
         self.hBoxLayout_Title = QHBoxLayout(self)
@@ -318,14 +319,13 @@ class PluginCard(CardWidget):  # 插件卡片
                 triggered=self.remove_plugin
             )
         ])
-        if enable_settings:
-            self.moreMenu.addSeparator()
-            self.moreMenu.addAction(Action(fIcon.SETTING, f'“{title}”插件设置', triggered=self.show_settings))
-        else:
-            self.settingsBtn.hide()
 
         if plugin_dir in enabled_plugins['enabled_plugins']:  # 插件是否启用
             self.enableButton.setChecked(True)
+            if enable_settings:
+                self.moreMenu.addSeparator()
+                self.moreMenu.addAction(Action(fIcon.SETTING, f'“{title}”插件设置', triggered=self.show_settings))
+                self.settingsBtn.show()
 
         self.setFixedHeight(73)
         self.iconWidget.setFixedSize(48, 48)
@@ -912,7 +912,9 @@ class SettingsMenu(FluentWindow):
                      text_scale_factor.setText(str(slider_scale_factor.value()) + '%'))
         )  # 保存缩放系数
 
+
         what_is_hide_mode_3 = self.adInterface.findChild(HyperlinkLabel, 'what_is_hide_mode_3')
+  
         def what_is_hide_mode_3_clicked():
             w = MessageBox('灵活模式', '灵活模式为上课时自动隐藏，可手动改变隐藏状态，当前课程状态（上课/课间）改变后会清除手动隐藏状态，重新转为自动隐藏。', self)
             w.cancelButton.hide()
