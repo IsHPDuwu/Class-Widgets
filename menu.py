@@ -8,7 +8,7 @@ from pathlib import Path
 from shutil import rmtree
 
 from PyQt5 import uic, QtCore
-from PyQt5.QtCore import Qt, QTime, QUrl, QDate, pyqtSignal
+from PyQt5.QtCore import Qt, QTime, QUrl, QDate, pyqtSignal, QSize
 from PyQt5.QtGui import QIcon, QDesktopServices, QColor
 from PyQt5.QtWidgets import QApplication, QHeaderView, QTableWidgetItem, QLabel, QHBoxLayout, QSizePolicy, \
     QSpacerItem, QFileDialog, QVBoxLayout, QScroller, QWidget, QListWidgetItem
@@ -636,11 +636,12 @@ class SettingsMenu(FluentWindow):
             self.file_path.setText(file_path)
             self.settings = self.findChild(ToolButton, 'file_item_settings')
             self.settings.setIcon(fIcon.SETTING)
+            self.id = id
         
-    def cf_add_item(self, file_name, file_path):
-        item_widget = self.cf_FileItem(file_name, file_path)
+    def cf_add_item(self, file_name, file_path, id):
+        item_widget = self.cf_FileItem(file_name, file_path, id)
         item = QListWidgetItem()
-        item.setSizeHint(item_widget.sizeHint())
+        item.setSizeHint(QSize(200,60))
         self.table.addItem(item)
         self.table.setItemWidget(item, item_widget)
     
@@ -662,8 +663,12 @@ class SettingsMenu(FluentWindow):
         self.table.setResizeMode(ListWidget.Adjust)  # 调整大小
         self.table.setWrapping(True)  # 允许换行
 
-        for file in list_.get_schedule_config():
-            self.cf_add_item(file,'local')
+        config_list = list_.get_schedule_config()
+
+        for id in range(len(config_list)):
+            self.cf_add_item(config_list[id],'local',id)
+
+        self.table.setCurrentRow(list_.get_schedule_config().index(config_center.read_conf('General', 'schedule')))
         
         # self.conf_combo = self.cfInterface.findChild(ComboBox, 'conf_combo')
         # self.conf_combo.clear()
@@ -676,15 +681,11 @@ class SettingsMenu(FluentWindow):
         # conf_name.setText(config_center.schedule_name[:-5])
         # conf_name.textEdited.connect(self.ad_change_file_name)
         
-        # cf_import_schedule = self.findChild(PushButton, 'im_schedule')
-        # cf_import_schedule.clicked.connect(self.cf_import_schedule)  # 导入课程表
         # cf_export_schedule = self.findChild(PushButton, 'ex_schedule')
         # cf_export_schedule.clicked.connect(self.cf_export_schedule)  # 导出课程表
         # cf_open_schedule_folder = self.findChild(PushButton, 'open_schedule_folder')  # 打开课程表文件夹
         # cf_open_schedule_folder.clicked.connect(lambda: open_dir(os.path.join(os.path.abspath('.'), 'config/schedule')))
 
-        # cf_import_schedule_cses = self.findChild(PushButton, 'im_schedule_cses')
-        # cf_import_schedule_cses.clicked.connect(self.cf_import_schedule_cses)  # 导入课程表（CSES）
         # cf_export_schedule_cses = self.findChild(PushButton, 'ex_schedule_cses')
         # cf_export_schedule_cses.clicked.connect(self.cf_export_schedule_cses)  # 导出课程表（CSES）
         # cf_what_is_cses = self.findChild(HyperlinkButton, 'what_is')
