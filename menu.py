@@ -24,7 +24,7 @@ from qfluentwidgets import (
     CalendarPicker, BodyLabel, ColorDialog, isDarkTheme, TimeEdit, EditableComboBox, MessageBoxBase,
     SearchLineEdit, Slider, PlainTextEdit, ToolTipFilter, ToolTipPosition, RadioButton, HyperlinkLabel,
     PrimaryDropDownPushButton, Action, RoundMenu, CardWidget, ImageLabel, StrongBodyLabel,
-    TransparentDropDownToolButton, Dialog, SmoothScrollArea, TransparentToolButton, TableWidget
+    TransparentDropDownToolButton, Dialog, SmoothScrollArea, TransparentToolButton, TableWidget, HyperlinkButton
 )
 from qfluentwidgets.common import themeColor
 from qfluentwidgets.components.widgets import ListItemDelegate
@@ -699,6 +699,7 @@ class SettingsMenu(FluentWindow):
             self.cf_file_list.append(self.cf_add_item(config_list[id],'local',id))
 
         self.table.setCurrentRow(list_.get_schedule_config().index(config_center.read_conf('General', 'schedule')))
+        self.table.currentRowChanged.connect(self.cf_change_file)
 
         # self.conf_combo = self.cfInterface.findChild(ComboBox, 'conf_combo')
         # self.conf_combo.clear()
@@ -864,17 +865,6 @@ class SettingsMenu(FluentWindow):
             lambda: config_center.write_conf('General', 'margin', str(margin_spin.value()))
         )  # 保存边距设定
 
-        self.conf_combo = self.adInterface.findChild(ComboBox, 'conf_combo')
-        self.conf_combo.clear()
-        self.conf_combo.addItems(list_.get_schedule_config())
-        self.conf_combo.setCurrentIndex(
-            list_.get_schedule_config().index(config_center.read_conf('General', 'schedule')))
-        self.conf_combo.currentIndexChanged.connect(self.ad_change_file)  # 切换配置文件
-
-        conf_name = self.adInterface.findChild(LineEdit, 'conf_name')
-        conf_name.setText(config_center.schedule_name[:-5])
-        conf_name.textEdited.connect(self.ad_change_file_name)
-
         window_status_combo = self.adInterface.findChild(ComboBox, 'window_status_combo')
         window_status_combo.addItems(list_.window_status)
         window_status_combo.setCurrentIndex(int(config_center.read_conf('General', 'pin_on_top')))
@@ -978,12 +968,12 @@ class SettingsMenu(FluentWindow):
                      text_scale_factor.setText(str(slider_scale_factor.value()) + '%'))
         )  # 保存缩放系数
 
-        what_is_hide_mode_3:HyperlinkButton = self.adInterface.findChild(HyperlinkButton, 'what_is_hide_mode_3')
-        def what_is_hide_mode_3_clicked():
-            w = MessageBox('灵活模式', '灵活模式为上课时自动隐藏，可手动改变隐藏状态，当前课程状态（上课/课间）改变后会清除手动隐藏状态，重新转为自动隐藏。', self)
-            w.cancelButton.hide()
-            w.exec()
-        what_is_hide_mode_3.clicked.connect(what_is_hide_mode_3_clicked)
+        # what_is_hide_mode_3:HyperlinkButton = self.adInterface.findChild(HyperlinkButton, 'what_is_hide_mode_3')
+        # def what_is_hide_mode_3_clicked():
+        #     w = MessageBox('灵活模式', '灵活模式为上课时自动隐藏，可手动改变隐藏状态，当前课程状态（上课/课间）改变后会清除手动隐藏状态，重新转为自动隐藏。', self)
+        #     w.cancelButton.hide()
+        #     w.exec()
+        # what_is_hide_mode_3.clicked.connect(what_is_hide_mode_3_clicked)
         
     def setup_schedule_edit(self):
         se_load_item()
@@ -1432,7 +1422,7 @@ class SettingsMenu(FluentWindow):
         except Exception as e:
             logger.error(f'更新预览界面时发生错误：{e}')
 
-    def ad_change_file_name(self):
+    def cf_change_file_name(self):
         try:
             conf_name = self.findChild(LineEdit, 'conf_name')
             old_name = config_center.schedule_name
@@ -1449,12 +1439,12 @@ class SettingsMenu(FluentWindow):
             print(f'修改课程文件名称时发生错误：{e}')
             logger.error(f'修改课程文件名称时发生错误：{e}')
 
-    def ad_change_file(self):  # 切换课程文件
+    def cf_change_file(self):  # 切换课程文件
         try:
             conf_name = self.findChild(LineEdit, 'conf_name')
             # 添加新课表
-            if self.conf_combo.currentText() == '添加新课表':
-                self.conf_combo.setCurrentIndex(-1)  # 取消
+            if self.cf_file_list[self.table.currentIndex().row()].file_name.text() == '添加新课表':
+                # self.conf_combo.setCurrentIndex(-1)  # 取消
                 # new_name = f'新课表 - {list.return_default_schedule_number() + 1}'
                 n2_dialog = TextFieldMessageBox(
                     self, '请输入新课表名称',
@@ -1465,25 +1455,21 @@ class SettingsMenu(FluentWindow):
 
                 new_name = n2_dialog.textField.text()
                 list_.create_new_profile(f'{new_name}.json')
-                self.conf_combo.clear()
-                self.conf_combo.addItems(list_.get_schedule_config())
-                config_center.write_conf('General', 'schedule', f'{new_name}.json')
-                self.conf_combo.setCurrentIndex(
-                    list_.get_schedule_config().index(config_center.read_conf('General', 'schedule')))
+
                 conf_name.setText(new_name)
 
-            elif self.conf_combo.currentText().endswith('.json'):
-                new_name = self.conf_combo.currentText()
+            elif self.cf_file_list[self.table.currentIndex().row()].file_name.text():
+                new_name = self.cf_file_list[self.table.currentIndex().row()].file_name.text()
                 config_center.write_conf('General', 'schedule', new_name)
                 conf_name.setText(new_name[:-5])
 
             else:
-                logger.error(f'切换课程文件时列表选择异常：{self.conf_combo.currentText()}')
+                logger.error(f'切换课程文件时列表选择异常：{self.cf_file_list[self.table.currentIndex().row()].file_name.text()}')
                 Flyout.create(
                     icon=InfoBarIcon.ERROR,
                     title='错误！',
-                    content=f"列表选项异常！{self.conf_combo.currentText()}",
-                    target=self.conf_combo,
+                    content=f"列表选项异常！{self.cf_file_list[self.table.currentIndex().row()].file_name.text()}",
+                    # target=self.conf_combo,
                     parent=self,
                     isClosable=True,
                     aniType=FlyoutAnimationType.PULL_UP
