@@ -627,13 +627,15 @@ class SettingsMenu(FluentWindow):
         spin_prepare_time.valueChanged.connect(self.save_prepare_time)  # 准备时间
 
     class cf_FileItem(QWidget,uic.loadUiType(f'{base_directory}/view/menu/file_item.ui')[0]):
-        def __init__(self, file_name='', file_path=''):
+        def __init__(self, file_name='', file_path='local', id=None):
             super().__init__()
             self.setupUi(self) 
             self.file_name = self.findChild(StrongBodyLabel, 'file_name')
             self.file_name.setText(file_name)
             self.file_path = self.findChild(BodyLabel, 'file_path')
             self.file_path.setText(file_path)
+            self.settings = self.findChild(ToolButton, 'file_item_settings')
+            self.settings.setIcon(fIcon.SETTING)
         
     def cf_add_item(self, file_name, file_path):
         item_widget = self.cf_FileItem(file_name, file_path)
@@ -652,10 +654,9 @@ class SettingsMenu(FluentWindow):
         # self.update_all.clicked.connect(self.cf_update_all)  # 更新全部
 
         self.import_from_file = self.cfInterface.findChild(PushButton, 'config_import')
-        # self.import_from_file.clicked.connect(self.cf_import_from_file)  # 从文件导入
+        self.import_from_file.clicked.connect(self.cf_import_schedule)  # 从文件导入
 
         self.table:ListWidget = self.cfInterface.findChild(ListWidget, 'config_table')
-        # self.table.cellClicked.connect(self.cf_table_cell_clicked)  # 表格点
         self.table.setViewMode(ListWidget.IconMode)  # 允许横向排列
         self.table.setFlow(ListWidget.LeftToRight)  # 设置从左到右排列
         self.table.setResizeMode(ListWidget.Adjust)  # 调整大小
@@ -1248,8 +1249,7 @@ class SettingsMenu(FluentWindow):
             if new_version != config_center.read_conf("Other", "version") and utils.tray_icon:
                 utils.tray_icon.push_update_notification(f"新版本速递：{new_version}")
 
-    def cf_import_schedule_cses(self):  # 导入课程表（CSES）
-        file_path, _ = QFileDialog.getOpenFileName(self, "选择文件", "", "CSES 通用课程表交换文件 (*.yaml)")
+    def cf_import_schedule_cses(self, file_path):  # 导入课程表（CSES）
         if file_path:
             file_name = file_path.split("/")[-1]
             save_path = f"{base_directory}/config/schedule/{file_name.replace('.yaml', '.json')}"
@@ -1309,8 +1309,10 @@ class SettingsMenu(FluentWindow):
                     return 0
 
     def cf_import_schedule(self):  # 导入课程表
-        file_path, _ = QFileDialog.getOpenFileName(self, "选择文件", "", "Json 配置文件 (*.json)")
+        file_path, _ = QFileDialog.getOpenFileName(self, "选择文件", "", "Json 配置文件 (*.json);;CSES 通用课程表交换文件 (*.yaml)")
         if file_path:
+            if file_path.endswith('.yaml') or file_path.endswith('.yml'):
+                return self.cf_import_schedule_cses(file_path)
             file_name = file_path.split("/")[-1]
             if list_.import_schedule(file_path, file_name):
                 self.conf_combo.addItem(file_name)
