@@ -87,6 +87,13 @@
           </widget>
          </item>
          <item>
+          <widget class="PushButton" name="config_new">
+           <property name="text">
+            <string>新建</string>
+           </property>
+          </widget>
+         </item>
+         <item>
           <widget class="PushButton" name="config_import">
            <property name="text">
             <string>导入</string>
@@ -124,11 +131,6 @@
   <customwidget>
    <class>LineEdit</class>
    <extends>QLineEdit</extends>
-   <header>qfluentwidgets</header>
-  </customwidget>
-  <customwidget>
-   <class>TableWidget</class>
-   <extends>QTableWidget</extends>
    <header>qfluentwidgets</header>
   </customwidget>
   <customwidget>

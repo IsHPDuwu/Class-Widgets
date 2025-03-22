@@ -645,16 +645,17 @@ class SettingsMenu(FluentWindow):
         spin_prepare_time.setValue(int(config_center.read_conf('Toast', 'prepare_minutes')))
         spin_prepare_time.valueChanged.connect(self.save_prepare_time)  # 准备时间
 
-    class cf_FileItem(QWidget,uic.loadUiType(f'{base_directory}/view/menu/file_item.ui')[0]):
-        def __init__(self, file_name='', file_path='local', id=None):
+    class cf_FileItem(QWidget, uic.loadUiType(f'{base_directory}/view/menu/file_item.ui')[0]):
+        def __init__(self, file_name='', file_path='local', id=None, settings_func=None):
             super().__init__()
-            self.setupUi(self) 
+            self.setupUi(self)
             self.file_name = self.findChild(StrongBodyLabel, 'file_name')
             self.file_name.setText(file_name)
             self.file_path = self.findChild(BodyLabel, 'file_path')
             self.file_path.setText(file_path)
             self.settings = self.findChild(ToolButton, 'file_item_settings')
             self.settings.setIcon(fIcon.SETTING)
+            self.settings.clicked.connect(lambda: settings_func(self.id))
             self.id = id
 
     class cf_CustomDelegate(ListItemDelegate):
@@ -682,10 +683,14 @@ class SettingsMenu(FluentWindow):
         self.update_all = self.cfInterface.findChild(PushButton, 'config_update_all')
         # self.update_all.clicked.connect(self.cf_update_all)  # 更新全部
 
+        self.config_new = self.cfInterface.findChild(PushButton, 'config_new')
+        self.config_new.clicked.connect(self.cf_new_config)
+
         self.import_from_file = self.cfInterface.findChild(PushButton, 'config_import')
         self.import_from_file.clicked.connect(self.cf_import_schedule)  # 从文件导入
 
         self.table:ListWidget = self.cfInterface.findChild(ListWidget, 'config_table')
+        self.table.clear()
         self.table.setViewMode(ListWidget.IconMode)  # 允许横向排列
         self.table.setFlow(ListWidget.LeftToRight)  # 设置从左到右排列
         self.table.setResizeMode(ListWidget.Adjust)  # 调整大小
@@ -701,17 +706,7 @@ class SettingsMenu(FluentWindow):
         self.table.setCurrentRow(list_.get_schedule_config().index(config_center.read_conf('General', 'schedule')))
         self.table.currentRowChanged.connect(self.cf_change_file)
 
-        # self.conf_combo = self.cfInterface.findChild(ComboBox, 'conf_combo')
-        # self.conf_combo.clear()
-        # self.conf_combo.addItems(list_.get_schedule_config())
-        # self.conf_combo.setCurrentIndex(
-        #     list_.get_schedule_config().index(config_center.read_conf('General', 'schedule')))
-        # self.conf_combo.currentIndexChanged.connect(self.ad_change_file)  # 切换配置文件
 
-        # conf_name = self.cfInterface.findChild(LineEdit, 'conf_name')
-        # conf_name.setText(config_center.schedule_name[:-5])
-        # conf_name.textEdited.connect(self.ad_change_file_name)
-        
         # cf_export_schedule = self.findChild(PushButton, 'ex_schedule')
         # cf_export_schedule.clicked.connect(self.cf_export_schedule)  # 导出课程表
         # cf_open_schedule_folder = self.findChild(PushButton, 'open_schedule_folder')  # 打开课程表文件夹
@@ -1422,6 +1417,37 @@ class SettingsMenu(FluentWindow):
         except Exception as e:
             logger.error(f'更新预览界面时发生错误：{e}')
 
+    def cf_new_config(self):
+        try:
+            n2_dialog = TextFieldMessageBox(
+                        self, '请输入新课表名称',
+                        '请命名您的课程表计划：', '新课表 - 1', list_.get_schedule_config()
+                    )
+            if not n2_dialog.exec():
+                return
+
+            new_name = n2_dialog.textField.text()
+            list_.create_new_profile(f'{new_name}.json')
+
+            self.table.clear()
+            self.table.setViewMode(ListWidget.IconMode)  # 允许横向排列
+            self.table.setFlow(ListWidget.LeftToRight)  # 设置从左到右排列
+            self.table.setResizeMode(ListWidget.Adjust)  # 调整大小
+            self.table.setWrapping(True)  # 允许换行
+            self.table.setItemDelegate(self.cf_CustomDelegate(self.table))
+
+            config_list = list_.get_schedule_config()
+            self.cf_file_list.clear()
+
+            for id in range(len(config_list)):
+                self.cf_file_list.append(self.cf_add_item(config_list[id],'local',id))
+
+            self.table.setCurrentRow(list_.get_schedule_config().index(config_center.read_conf('General', 'schedule')))
+            self.table.currentRowChanged.connect(self.cf_change_file)
+        except Exception as e:
+            print(f'新建配置文件时发生错误：{e}')
+            logger.error(f'新建配置文件时发生错误：{e}')
+
     def cf_change_file_name(self):
         try:
             conf_name = self.findChild(LineEdit, 'conf_name')
@@ -1441,27 +1467,10 @@ class SettingsMenu(FluentWindow):
 
     def cf_change_file(self):  # 切换课程文件
         try:
-            conf_name = self.findChild(LineEdit, 'conf_name')
-            # 添加新课表
-            if self.cf_file_list[self.table.currentIndex().row()].file_name.text() == '添加新课表':
-                # self.conf_combo.setCurrentIndex(-1)  # 取消
-                # new_name = f'新课表 - {list.return_default_schedule_number() + 1}'
-                n2_dialog = TextFieldMessageBox(
-                    self, '请输入新课表名称',
-                    '请命名您的课程表计划：', '新课表 - 1', list_.get_schedule_config()
-                )
-                if not n2_dialog.exec():
-                    return
 
-                new_name = n2_dialog.textField.text()
-                list_.create_new_profile(f'{new_name}.json')
-
-                conf_name.setText(new_name)
-
-            elif self.cf_file_list[self.table.currentIndex().row()].file_name.text():
+            if self.cf_file_list[self.table.currentIndex().row()].file_name.text():
                 new_name = self.cf_file_list[self.table.currentIndex().row()].file_name.text()
                 config_center.write_conf('General', 'schedule', new_name)
-                conf_name.setText(new_name[:-5])
 
             else:
                 logger.error(f'切换课程文件时列表选择异常：{self.cf_file_list[self.table.currentIndex().row()].file_name.text()}')
