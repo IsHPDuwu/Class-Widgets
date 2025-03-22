@@ -125,9 +125,17 @@
      </property>
     </spacer>
    </item>
+   <item>
+    <widget class="ToolButton" name="file_item_settings"/>
+   </item>
   </layout>
  </widget>
  <customwidgets>
+  <customwidget>
+   <class>ToolButton</class>
+   <extends>QToolButton</extends>
+   <header>qfluentwidgets</header>
+  </customwidget>
   <customwidget>
    <class>BodyLabel</class>
    <extends>QLabel</extends>
