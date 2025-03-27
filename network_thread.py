@@ -198,9 +198,8 @@ class getReadme(QThread):  # 获取README
             return ''
 
 class getCity(QThread):
-    city_signal = pyqtSignal(str)
 
-    def __init__(self, url='http://ip-api.com/json/?lang=zh-CN&fields=status,message,city,query'):
+    def __init__(self, url='https://qifu-api.baidubce.com/ip/local/geo/v1/district'):
         super().__init__()
         self.download_url = url
 
@@ -208,7 +207,6 @@ class getCity(QThread):
         try:
             city_data = self.get_city()
             config_center.write_conf('Weather', 'city', db.search_code_by_name(city_data))
-            self.city_signal.emit(city_data)
         except Exception as e:
             logger.error(f"获取城市失败: {e}")
 
@@ -217,18 +215,21 @@ class getCity(QThread):
             req = requests.get(self.download_url, proxies=proxies)
             if req.status_code == 200:
                 data = req.json()
-                if data['status'] == 'success':
-                    logger.info(f"获取城市成功：{data['city']}")
-                    return data['city']
+                # {"code":"Success","data":{"continent":"","country":"中国","zipcode":"","owner":"","isp":"","adcode":"","prov":"","city":"","district":""},"ip":"45.192.96.246"}
+                if data['code'] == 'Success':
+                    data = data['data']
+                    logger.info(f"获取城市成功：{data['city']}, {data['district']}")
+                    return (data['city'], data['district'])
                 else:
                     logger.error(f"获取城市失败：{data['message']}")
+                    return ('', '')
             else:
                 logger.error(f"获取城市失败：{req.status_code}")    
-                return ''
+                return ('', '')
             
         except Exception as e:
             logger.error(f"获取城市失败：{e}")
-            return ''
+            return ('', '')
 
 class VersionThread(QThread):  # 获取最新版本号
     version_signal = pyqtSignal(dict)
