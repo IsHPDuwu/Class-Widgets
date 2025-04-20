@@ -448,7 +448,8 @@ def get_current_lesson_name():
 
 def get_hide_status_from_current_state():
     # 1 -> hide, 0 -> show
-    # 祝我体测满分啊（（
+    # 满分啦（
+    # 祝所有用 Class Widgets 的、不用 Class Widgets 的学子体测满分啊（（
     global current_state, current_lesson_name, excluded_lessons
     # if current_state:
     #     if not current_lesson_name in excluded_lessons:
