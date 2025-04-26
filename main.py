@@ -25,7 +25,7 @@ from qfluentwidgets import Theme, setTheme, setThemeColor, SystemTrayMenu, Actio
     Dialog, ProgressRing, PlainTextEdit, ImageLabel, PushButton, InfoBarIcon, Flyout, FlyoutAnimationType, CheckBox, \
     PrimaryPushButton, IconWidget
 
-# fix: 由于 deregister 错误绑定造成的更改主题访问已删除元素
+# patch: 由于 deregister 错误绑定造成的更改主题访问已删除元素
 import qfluentwidgets.common.style_sheet as qss
 
 class StyleSheetManager(qss.StyleSheetManager):
@@ -63,6 +63,7 @@ class StyleSheetManager(qss.StyleSheetManager):
             self.widgets[widget] = StyleSheetCompose([source, CustomStyleSheet(widget)])
 
 qss.styleSheetManager = StyleSheetManager()
+# end of patch
 
 import conf
 import list_
