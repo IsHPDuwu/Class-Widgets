@@ -207,10 +207,6 @@ class ExtraMenu(FluentWindow):
         self.addSubInterface(self.interface, fIcon.INFO, '更多设置')
 
     def closeEvent(self, e):
-        tmp_schedule_list = self.findChild(ListWidget, 'schedule_list')
-        if tmp_schedule_list:
-            tmp_schedule_list.clear()
-            tmp_schedule_list.setParent(None)
         self.deleteLater()
         return super().closeEvent(e)
 
