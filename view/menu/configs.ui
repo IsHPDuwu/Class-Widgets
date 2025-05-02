@@ -82,7 +82,7 @@
          <item>
           <widget class="PushButton" name="config_update">
            <property name="text">
-            <string>更新目前</string>
+            <string>更新当前</string>
            </property>
           </widget>
          </item>

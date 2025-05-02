@@ -697,8 +697,7 @@ class SettingsMenu(FluentWindow):
         # self.config_download.clicked.connect(self.cf_download_config)  # 下载配置
         
         self.update_now = self.cfInterface.findChild(PushButton, 'config_update')
-        self.update_now.setEnabled(False)
-        # self.update_now.clicked.connect(self.cf_update_now)  # 更新当前
+        self.update_now.clicked.connect(self.cf_get_schedule)  # 更新当前
 
         self.config_new = self.cfInterface.findChild(PushButton, 'config_new')
         self.config_new.clicked.connect(self.cf_new_config)
@@ -1506,7 +1505,13 @@ class SettingsMenu(FluentWindow):
             print(f'切换配置文件时发生错误：{e}')
             logger.error(f'切换配置文件时发生错误：{e}')
 
-    def cf_get_schedule(self, url):
+    def cf_get_schedule(self):
+        url = schedule_center.schedule_data.get('url', 'local')
+        if url == 'local':
+            w = MessageBox('此课表为本地课表', '如需使用网络获取课表，请上传。', self)
+            w.cancelButton.hide()
+            w.exec()
+            return
         self.version_thread = scheduleThread(url)
         self.version_thread.update_signal.connect(self.cf_receive_schedule)
         self.version_thread.start()
