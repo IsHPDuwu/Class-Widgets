@@ -148,6 +148,13 @@ class ScheduleCenter:
             self.schedule_data['url'] = 'local'
             self.save_data(self.schedule_data, config_center.schedule_name)
 
+    def update_url(self, url):
+        """
+        更新课程表url
+        """
+        self.schedule_data['url'] = url
+        self.save_data(self.schedule_data, config_center.schedule_name)
+
     def save_data(self, new_data, filename):
         # 更新，添加或覆盖新的数据
         self.schedule_data.update(new_data)
@@ -159,6 +166,7 @@ class ScheduleCenter:
             return f"数据已成功保存到 config/schedule/{filename}"
         except Exception as e:
             logger.error(f"保存数据时出错: {e}")
+    
 
 
 def load_from_json(filename):

@@ -690,11 +690,9 @@ class SettingsMenu(FluentWindow):
     
     def setup_configs_interface(self):  # 配置界面
         self.config_url = self.cfInterface.findChild(LineEdit, 'config_url')
-        self.config_url.setEnabled(False)
 
         self.config_download = self.cfInterface.findChild(PushButton, 'config_download')
-        self.config_download.setEnabled(False)
-        # self.config_download.clicked.connect(self.cf_download_config)  # 下载配置
+        self.config_download.clicked.connect(self.cf_load_schedule_from_db)  # 下载配置
         
         self.update_now = self.cfInterface.findChild(PushButton, 'config_update')
         self.update_now.clicked.connect(self.cf_get_schedule)  # 更新当前
@@ -1519,6 +1517,39 @@ class SettingsMenu(FluentWindow):
     def cf_receive_schedule(self, data):
         schedule_center.schedule_data = data
         schedule_center.update_schedule()
+
+    def cf_load_schedule_from_db(self):
+        try:
+            self.config_url:LineEdit = self.cfInterface.findChild(LineEdit, 'config_url')
+            url = self.config_url.text()
+            if url == '':
+                w = MessageBox('请输入配置文件链接', '请输入配置文件链接', self)
+                w.cancelButton.hide()
+                w.exec()
+                return        
+            self.version_thread = scheduleThread(url)
+            self.version_thread.update_signal.connect(self.cf_receive_schedule_from_db)
+            self.version_thread.start()
+            self.config_url.setEnabled(False)
+            
+        except Exception as e:
+            logger.error(f'获取配置文件 {url} 时发生错误：{e}')
+    
+    def cf_receive_schedule_from_db(self, data):
+        if data.get('error', None):
+            w = MessageBox('获取配置文件失败', data['error'], self)
+            w.cancelButton.hide()
+            w.exec()
+            self.config_url.setEnabled(True)
+            return
+        self.cf_new_config()
+        self.config_url = self.cfInterface.findChild(LineEdit, 'config_url')
+        url = self.config_url.text()
+        data['url'] = url
+        schedule_center.save_data(data, config_center.schedule_name)
+        self.config_url.setEnabled(True)
+        self.config_url.clear()
+
 
     def sp_fill_grid_row(self):  # 填充预览表格
         subtitle = self.findChild(SubtitleLabel, 'subtitle_file')
