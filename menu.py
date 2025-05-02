@@ -610,6 +610,11 @@ class SettingsMenu(FluentWindow):
         switch_enable_finish.checkedChanged.connect(lambda checked: switch_checked('Toast', 'finish_class', checked))
         # 下课提醒开关
 
+        switch_enable_finish = self.findChild(SwitchButton, 'switch_enable_schoolout')
+        switch_enable_finish.setChecked(int(config_center.read_conf('Toast', 'after_school')))
+        switch_enable_finish.checkedChanged.connect(lambda checked: switch_checked('Toast', 'after_school', checked))
+        # 放学提醒开关
+
         switch_enable_prepare = self.findChild(SwitchButton, 'switch_enable_prepare')
         switch_enable_prepare.setChecked(int(config_center.read_conf('Toast', 'prepare_class')))
         switch_enable_prepare.checkedChanged.connect(lambda checked: switch_checked('Toast', 'prepare_class', checked))
@@ -756,6 +761,8 @@ class SettingsMenu(FluentWindow):
         set_ac_color.clicked.connect(self.ct_set_ac_color)
         set_fc_color = self.findChild(PushButton, 'set_fc_color')
         set_fc_color.clicked.connect(self.ct_set_fc_color)
+        set_floating_time_color = self.findChild(PushButton, 'set_fc_color_2')
+        set_floating_time_color.clicked.connect(self.ct_set_floating_time_color)
 
         open_theme_folder = self.findChild(HyperlinkLabel, 'open_theme_folder')  # 打开主题文件夹
         open_theme_folder.clicked.connect(lambda: open_dir(os.path.join(base_directory, 'ui')))
@@ -795,6 +802,11 @@ class SettingsMenu(FluentWindow):
         blur_countdown.setChecked(int(config_center.read_conf('General', 'blur_countdown')))
         blur_countdown.checkedChanged.connect(lambda checked: switch_checked('General', 'blur_countdown', checked))
         # 模糊倒计时
+        switch_blur_floating = self.findChild(SwitchButton, 'switch_blur_countdown_2')
+        switch_blur_floating.setChecked(int(config_center.read_conf('General', 'blur_floating_countdown')))
+        switch_blur_floating.checkedChanged.connect(
+            lambda checked: config_center.write_conf('General', 'blur_floating_countdown', int(checked))
+        )
 
         select_weather_api = self.findChild(ComboBox, 'select_weather_api')  # 天气API选择
         select_weather_api.addItems(weather_db.api_config['weather_api_list_zhCN'])
@@ -966,17 +978,14 @@ class SettingsMenu(FluentWindow):
                      text_scale_factor.setText(str(slider_scale_factor.value()) + '%'))
         )  # 保存缩放系数
 
-        what_is_hide_mode_3: HyperlinkButton = self.adInterface.findChild(HyperlinkButton, 'what_is_hide_mode_3')
-        if what_is_hide_mode_3:
-            def what_is_hide_mode_3_clicked():
-                w = MessageBox('灵活模式',
-                               '灵活模式为上课时自动隐藏，可手动改变隐藏状态，当前课程状态（上课/课间）改变后会清除手动隐藏状态，重新转为自动隐藏。',
-                               self)
-                w.cancelButton.hide()
-                w.exec()
-
-            what_is_hide_mode_3.clicked.connect(what_is_hide_mode_3_clicked)
-
+        what_is_hide_mode_3 = self.adInterface.findChild(HyperlinkLabel, 'what_is_hide_mode_3')
+  
+        def what_is_hide_mode_3_clicked():
+            w = MessageBox('灵活模式', '灵活模式为上课时自动隐藏，可手动改变隐藏状态，当前课程状态（上课/课间）改变后会清除手动隐藏状态，重新转为自动隐藏。', self)
+            w.cancelButton.hide()
+            w.exec()
+        what_is_hide_mode_3.clicked.connect(what_is_hide_mode_3_clicked)
+        
     def setup_schedule_edit(self):
         se_load_item()
         se_set_button = self.findChild(ToolButton, 'set_button')
@@ -1124,7 +1133,7 @@ class SettingsMenu(FluentWindow):
         if search_city_dialog.exec():
             selected_city = search_city_dialog.city_list.selectedItems()
             if selected_city:
-                config_center.write_conf('Weather', 'city', wd.search_code_by_name(selected_city[0].text()))
+                config_center.write_conf('Weather', 'city', wd.search_code_by_name((selected_city[0].text(),'')))
 
     def show_license(self):
         license_dialog = licenseDialog(self)
@@ -1205,7 +1214,8 @@ class SettingsMenu(FluentWindow):
     def ct_add_widget(self):
         widgets_list = self.findChild(ListWidget, 'widgets_list')
         widgets_combo = self.findChild(ComboBox, 'widgets_combo')
-        widgets_list.addItem(widgets_combo.currentText())
+        if (not widgets_list.findItems(widgets_combo.currentText(), QtCore.Qt.MatchFlag.MatchExactly)) or widgets_combo.currentText() in list_.native_widget_name:
+            widgets_list.addItem(widgets_combo.currentText())
         self.ct_update_preview()
 
     def ct_remove_widget(self):
@@ -1230,6 +1240,13 @@ class SettingsMenu(FluentWindow):
         w = ColorDialog(current_color, "更改课间时主题色", self, enableAlpha=False)
         w.colorChanged.connect(lambda color: config_center.write_conf('Color', 'finish_class', color.name()[1:]))
         w.exec()
+
+    def ct_set_floating_time_color(self):
+        current_color = QColor(f'#{config_center.read_conf("Color", "floating_time")}')
+        w = ColorDialog(current_color, "更改浮窗时间颜色", self, enableAlpha=False)
+        w.colorChanged.connect(lambda color: config_center.write_conf('Color', 'floating_time', color.name()[1:]))
+        w.exec()
+        self.ct_update_preview()
 
     def cf_export_schedule(self):  # 导出课程表
         file_path, _ = QFileDialog.getSaveFileName(self, "保存文件", config_center.schedule_name,

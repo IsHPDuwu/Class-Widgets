@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>688</width>
+    <width>765</width>
     <height>1331</height>
    </rect>
   </property>
@@ -581,6 +581,13 @@
                 </property>
                </widget>
               </item>
+              <item>
+               <widget class="HyperlinkLabel" name="what_is_hide_mode_3">
+                <property name="text">
+                 <string>什么是灵活隐藏？</string>
+                </property>
+               </widget>
+              </item>
              </layout>
             </item>
             <item>
@@ -627,14 +634,14 @@
                  </sizepolicy>
                 </property>
                 <property name="text">
-                 <string>特定课程自动隐藏</string>
+                 <string>特定课程不自动隐藏</string>
                 </property>
                </widget>
               </item>
               <item>
                <widget class="CaptionLabel" name="CaptionLabel_14">
                 <property name="text">
-                 <string>若启用，在遇到下方设置的特定课程时自动隐藏，以英文逗号分隔</string>
+                 <string>若启用，在遇到下方设置的特定课程时不会自动隐藏，以英文逗号分隔</string>
                 </property>
                 <property name="wordWrap">
                  <bool>false</bool>
@@ -660,8 +667,11 @@
             <item>
              <widget class="SwitchButton" name="switch_exclude_startup">
               <property name="onText">
+             <widget class="SwitchButton" name="switch_exclude_startup">
+              <property name="onText">
                <string>启用</string>
               </property>
+              <property name="offText">
               <property name="offText">
                <string>禁用</string>
               </property>
@@ -715,7 +725,7 @@
               <item>
                <widget class="CaptionLabel" name="CaptionLabel_14">
                 <property name="text">
-                 <string>配合 特定课程自动隐藏 使用</string>
+                 <string>配合 特定课程不自动隐藏 使用</string>
                 </property>
                 <property name="wordWrap">
                  <bool>false</bool>
@@ -738,6 +748,7 @@
               </item>
              </layout>
             </item>
+            <item>
             <item>
              <widget class="LineEdit" name="excluded_lessons">
               <property name="sizePolicy">
@@ -804,8 +815,7 @@
                    <string>允许通过点击或触摸小组件方式控制小组件
 若启用，单击小组件可显示或隐藏小组件，右键小组件可打开额外选项
 若禁用，点击小组件等同于点击小组件后方的窗口
-* 重启后生效
-</string>
+* 重启后生效</string>
                   </property>
                   <property name="wordWrap">
                    <bool>false</bool>
@@ -838,8 +848,44 @@
                 </property>
                </widget>
               </item>
+               <widget class="SwitchButton" name="switch_enable_click">
+                <property name="onText">
+                 <string>启用</string>
+                </property>
+                <property name="offText">
+                 <string>禁用</string>
+                </property>
+               </widget>
+              </item>
              </layout>
             </item>
+           </layout>
+          </widget>
+         </item>
+         <item>
+          <widget class="CardWidget" name="CardWidget_16">
+           <property name="minimumSize">
+            <size>
+             <width>0</width>
+             <height>70</height>
+            </size>
+           </property>
+           <layout class="QVBoxLayout" name="verticalLayout_26">
+            <property name="spacing">
+             <number>16</number>
+            </property>
+            <property name="leftMargin">
+             <number>16</number>
+            </property>
+            <property name="topMargin">
+             <number>16</number>
+            </property>
+            <property name="rightMargin">
+             <number>16</number>
+            </property>
+            <property name="bottomMargin">
+             <number>16</number>
+            </property>
             <item>
              <layout class="QHBoxLayout" name="horizontalLayout_14">
               <property name="spacing">
@@ -891,7 +937,7 @@
                </layout>
               </item>
               <item>
-               <layout class="QVBoxLayout" name="verticalLayout_22">
+               <layout class="QVBoxLayout" name="verticalLayout_27">
                 <item>
                  <widget class="Slider" name="slider_scale_factor">
                   <property name="sizePolicy">
@@ -1135,8 +1181,11 @@
             <item>
              <widget class="SwitchButton" name="switch_startup">
               <property name="onText">
+             <widget class="SwitchButton" name="switch_startup">
+              <property name="onText">
                <string>启用</string>
               </property>
+              <property name="offText">
               <property name="offText">
                <string>禁用</string>
               </property>
@@ -1227,8 +1276,11 @@
             <item>
              <widget class="SwitchButton" name="switch_safe_mode">
               <property name="onText">
+             <widget class="SwitchButton" name="switch_safe_mode">
+              <property name="onText">
                <string>启用</string>
               </property>
+              <property name="offText">
               <property name="offText">
                <string>禁用</string>
               </property>
@@ -1302,8 +1354,11 @@
             <item>
              <widget class="SwitchButton" name="switch_disable_log">
               <property name="onText">
+             <widget class="SwitchButton" name="switch_disable_log">
+              <property name="onText">
                <string>启用</string>
               </property>
+              <property name="offText">
               <property name="offText">
                <string>禁用</string>
               </property>
@@ -1449,11 +1504,15 @@
             <item>
              <widget class="SwitchButton" name="switch_multiple_programs">
               <property name="text">
+             <widget class="SwitchButton" name="switch_multiple_programs">
+              <property name="text">
                <string>不允许</string>
               </property>
               <property name="onText">
+              <property name="onText">
                <string>允许</string>
               </property>
+              <property name="offText">
               <property name="offText">
                <string>不允许</string>
               </property>
@@ -1529,6 +1588,11 @@
    <header>qfluentwidgets</header>
   </customwidget>
   <customwidget>
+   <class>Slider</class>
+   <extends>QSlider</extends>
+   <header>qfluentwidgets</header>
+  </customwidget>
+  <customwidget>
    <class>CardWidget</class>
    <extends>QFrame</extends>
    <header>qfluentwidgets</header>
@@ -1563,6 +1627,11 @@
   <customwidget>
    <class>TitleLabel</class>
    <extends>QLabel</extends>
+   <header>qfluentwidgets</header>
+  </customwidget>
+  <customwidget>
+   <class>HyperlinkLabel</class>
+   <extends>QPushButton</extends>
    <header>qfluentwidgets</header>
   </customwidget>
   <customwidget>
