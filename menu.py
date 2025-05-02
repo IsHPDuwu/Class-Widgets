@@ -1449,6 +1449,15 @@ class SettingsMenu(FluentWindow):
 
             new_name = n2_dialog.textField.text()
             list_.create_new_profile(f'{new_name}.json')
+            config_center.write_conf('General', 'schedule', f'{new_name}.json')
+            config_center.schedule_name = f'{new_name}.json'
+            schedule_center.update_schedule()
+            self.te_load_item()
+            self.te_upload_list()
+            self.te_update_parts_name()
+            se_load_item()
+            self.se_upload_list()
+            self.sp_fill_grid_row()
 
             self.table.clear()
             self.table.setViewMode(ListWidget.IconMode)  # 允许横向排列
@@ -1463,7 +1472,7 @@ class SettingsMenu(FluentWindow):
             for id in range(len(config_list)):
                 self.cf_file_list.append(self.cf_add_item(config_list[id],'local',id))
 
-            self.table.setCurrentRow(list_.get_schedule_config().index(config_center.read_conf('General', 'schedule')))
+            self.table.setCurrentRow(list_.get_schedule_config().index(f'{new_name}.json'))
             self.table.currentRowChanged.connect(self.cf_change_file)
         except Exception as e:
             print(f'新建配置文件时发生错误：{e}')
@@ -1515,7 +1524,7 @@ class SettingsMenu(FluentWindow):
         self.version_thread.start()
 
     def cf_receive_schedule(self, data):
-        schedule_center.schedule_data = data
+        schedule_center.save_data(data, config_center.schedule_name)
         schedule_center.update_schedule()
 
     def cf_load_schedule_from_db(self):

@@ -113,7 +113,7 @@ class ConfigCenter:
                          f'{base_directory}/config/schedule/{self.read_conf("General", "schedule")}')
                     logger.info(f"课程表不存在，已创建默认课程表")
                 else:
-                    config_center.write_conf('General', 'schedule', schedule_config[0])
+                    self.write_conf('General', 'schedule', schedule_config[0])
             print(os.path.join(os.getcwd(), 'config', 'schedule'))
 
         # 判断是否存在 Plugins 文件夹
