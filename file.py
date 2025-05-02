@@ -143,7 +143,10 @@ class ScheduleCenter:
         """
         更新课程表
         """
-        self.schedule_data = load_from_json(config_center.schedule_name)
+        self.schedule_data:dict = load_from_json(config_center.schedule_name)
+        if self.schedule_data.get('url', None) is None:
+            self.schedule_data['url'] = 'local'
+            self.save_data(self.schedule_data, config_center.schedule_name)
 
     def save_data(self, new_data, filename):
         # 更新，添加或覆盖新的数据
