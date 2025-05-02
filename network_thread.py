@@ -14,6 +14,7 @@ import utils
 import weather_db as db
 from conf import base_directory
 from file import config_center
+import list_
 
 headers = {"User-Agent": "Mozilla/5.0", "Cache-Control": "no-cache"}  # 设置请求头
 # proxies = {"http": "http://127.0.0.1:10809", "https": "http://127.0.0.1:10809"}  # 加速访问
@@ -481,3 +482,40 @@ class weatherReportThread(QThread):  # 获取最新天气信息
         except Exception as e:
             logger.error(f"获取天气信息失败：{e}")
             return {'error': {'info': {'value': '错误', 'unit': ''}}}
+
+class scheduleThread(QThread):  # 获取课表
+    update_signal = pyqtSignal(dict)
+    _instance_running = False
+
+    def __init__(self,url:str):
+        super().__init__()
+        self.url = url
+        for db in list_.schedule_dbs:
+            if self.url.startswith(db):
+                self.url = self.url.replace(db, list_.schedule_dbs[db])
+                break
+
+    def run(self):
+        # 获取最新版本
+        data = self.get_schedule()
+        # 发射版本信号
+        self.update_signal.emit(data)
+    
+    @classmethod
+    def is_running(cls):
+        return cls._instance_running
+
+    def get_schedule(self):
+        try:
+            logger.info(f"正在获取课表 {self.url}")
+            response = requests.get(self.url, proxies=proxies, timeout=30)
+            logger.debug(f"课表 {self.url} 请求响应: {response.status_code}")
+            if response.status_code == 200:
+                data = response.json()
+                return data
+            else:
+                logger.error(f"无法获取课表 {self.url} 错误代码：{response.status_code}，响应内容: {response.text}")
+                return {'error': f"请求失败，错误代码：{response.status_code}"}
+        except requests.exceptions.RequestException as e:
+            logger.error(f"请求失败，错误详情：{str(e)}")
+            return {"error": f"请求失败\n{str(e)}"}
