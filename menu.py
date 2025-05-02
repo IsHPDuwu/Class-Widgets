@@ -38,6 +38,7 @@ import weather_db as wd
 from conf import base_directory
 from cses_mgr import CSES_Converter
 from file import config_center, schedule_center
+import file
 from network_thread import VersionThread, scheduleThread
 from plugin import p_loader
 from plugin_plaza import PluginPlaza
@@ -715,7 +716,7 @@ class SettingsMenu(FluentWindow):
         self.cf_file_list = []
 
         for id in range(len(config_list)):
-            self.cf_file_list.append(self.cf_add_item(config_list[id],'local',id))
+            self.cf_file_list.append(self.cf_add_item(config_list[id],file.load_from_json(config_list[id]).get('url','local'),id))
 
         self.table.setCurrentRow(list_.get_schedule_config().index(config_center.read_conf('General', 'schedule')))
         self.table.currentRowChanged.connect(self.cf_change_file)
