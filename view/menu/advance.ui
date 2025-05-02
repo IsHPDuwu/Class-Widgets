@@ -667,11 +667,8 @@
             <item>
              <widget class="SwitchButton" name="switch_exclude_startup">
               <property name="onText">
-             <widget class="SwitchButton" name="switch_exclude_startup">
-              <property name="onText">
                <string>启用</string>
               </property>
-              <property name="offText">
               <property name="offText">
                <string>禁用</string>
               </property>
@@ -748,7 +745,6 @@
               </item>
              </layout>
             </item>
-            <item>
             <item>
              <widget class="LineEdit" name="excluded_lessons">
               <property name="sizePolicy">
@@ -839,15 +835,6 @@
                </layout>
               </item>
               <item>
-               <widget class="SwitchButton" name="switch_enable_click">
-                <property name="onText">
-                 <string>启用</string>
-                </property>
-                <property name="offText">
-                 <string>禁用</string>
-                </property>
-               </widget>
-              </item>
                <widget class="SwitchButton" name="switch_enable_click">
                 <property name="onText">
                  <string>启用</string>
@@ -1181,11 +1168,8 @@
             <item>
              <widget class="SwitchButton" name="switch_startup">
               <property name="onText">
-             <widget class="SwitchButton" name="switch_startup">
-              <property name="onText">
                <string>启用</string>
               </property>
-              <property name="offText">
               <property name="offText">
                <string>禁用</string>
               </property>
@@ -1276,11 +1260,8 @@
             <item>
              <widget class="SwitchButton" name="switch_safe_mode">
               <property name="onText">
-             <widget class="SwitchButton" name="switch_safe_mode">
-              <property name="onText">
                <string>启用</string>
               </property>
-              <property name="offText">
               <property name="offText">
                <string>禁用</string>
               </property>
@@ -1354,11 +1335,8 @@
             <item>
              <widget class="SwitchButton" name="switch_disable_log">
               <property name="onText">
-             <widget class="SwitchButton" name="switch_disable_log">
-              <property name="onText">
                <string>启用</string>
               </property>
-              <property name="offText">
               <property name="offText">
                <string>禁用</string>
               </property>
@@ -1504,15 +1482,11 @@
             <item>
              <widget class="SwitchButton" name="switch_multiple_programs">
               <property name="text">
-             <widget class="SwitchButton" name="switch_multiple_programs">
-              <property name="text">
                <string>不允许</string>
               </property>
               <property name="onText">
-              <property name="onText">
                <string>允许</string>
               </property>
-              <property name="offText">
               <property name="offText">
                <string>不允许</string>
               </property>
@@ -1580,11 +1554,6 @@
   <customwidget>
    <class>RadioButton</class>
    <extends>QRadioButton</extends>
-   <header>qfluentwidgets</header>
-  </customwidget>
-  <customwidget>
-   <class>Slider</class>
-   <extends>QSlider</extends>
    <header>qfluentwidgets</header>
   </customwidget>
   <customwidget>
