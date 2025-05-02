@@ -38,7 +38,7 @@ import weather_db as wd
 from conf import base_directory
 from cses_mgr import CSES_Converter
 from file import config_center, schedule_center
-from network_thread import VersionThread
+from network_thread import VersionThread, scheduleThread
 from plugin import p_loader
 from plugin_plaza import PluginPlaza
 
@@ -696,9 +696,9 @@ class SettingsMenu(FluentWindow):
         self.config_download.setEnabled(False)
         # self.config_download.clicked.connect(self.cf_download_config)  # 下载配置
         
-        self.update_all = self.cfInterface.findChild(PushButton, 'config_update_all')
-        self.update_all.setEnabled(False)
-        # self.update_all.clicked.connect(self.cf_update_all)  # 更新全部
+        self.update_now = self.cfInterface.findChild(PushButton, 'config_update')
+        self.update_now.setEnabled(False)
+        # self.update_now.clicked.connect(self.cf_update_now)  # 更新当前
 
         self.config_new = self.cfInterface.findChild(PushButton, 'config_new')
         self.config_new.clicked.connect(self.cf_new_config)
@@ -1505,6 +1505,15 @@ class SettingsMenu(FluentWindow):
         except Exception as e:
             print(f'切换配置文件时发生错误：{e}')
             logger.error(f'切换配置文件时发生错误：{e}')
+
+    def cf_get_schedule(self, url):
+        self.version_thread = scheduleThread(url)
+        self.version_thread.update_signal.connect(self.cf_receive_schedule)
+        self.version_thread.start()
+
+    def cf_receive_schedule(self, data):
+        schedule_center.schedule_data = data
+        schedule_center.update_schedule()
 
     def sp_fill_grid_row(self):  # 填充预览表格
         subtitle = self.findChild(SubtitleLabel, 'subtitle_file')

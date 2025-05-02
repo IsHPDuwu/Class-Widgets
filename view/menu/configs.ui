@@ -80,9 +80,9 @@
           </widget>
          </item>
          <item>
-          <widget class="PushButton" name="config_update_all">
+          <widget class="PushButton" name="config_update">
            <property name="text">
-            <string>全部更新</string>
+            <string>更新目前</string>
            </property>
           </widget>
          </item>
