@@ -105,6 +105,10 @@ widget_name = {
 
 native_widget_name = [widget_name[i] for i in widget_name]
 
+schedule_dbs = {
+    '@hpd': 'https://cwsch.hpdnya.com/'
+}
+
 try:  # 加载课程/主题配置文件
     subject_info = json.load(open(f'{base_directory}/config/data/subject.json', 'r', encoding='utf-8'))
     subject_icon = subject_info['subject_icon']
