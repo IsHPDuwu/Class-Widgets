@@ -487,18 +487,27 @@ class scheduleThread(QThread):  # 获取课表
     update_signal = pyqtSignal(dict)
     _instance_running = False
 
-    def __init__(self,url:str):
+    def __init__(self,url:str, method:str='GET', data:dict=None):
         super().__init__()
         self.url = url
+        self.method = method
+        self.data = data
+
         for db in list_.schedule_dbs:
             if self.url.startswith(db):
                 self.url = self.url.replace(db, list_.schedule_dbs[db])
                 break
 
     def run(self):
-        # 获取最新版本
-        data = self.get_schedule()
-        # 发射版本信号
+        # 获取
+        if self.method == 'GET':
+            data = self.get_schedule()
+        elif self.method == 'POST':
+            data = self.post_schedule()
+        else:
+            data = {'error': "method not supported"}
+        
+        # 发射信号
         self.update_signal.emit(data)
     
     @classmethod
@@ -516,6 +525,21 @@ class scheduleThread(QThread):  # 获取课表
             else:
                 logger.error(f"无法获取课表 {self.url} 错误代码：{response.status_code}，响应内容: {response.text}")
                 return {'error': f"请求失败，错误代码：{response.status_code}"}
-        except requests.exceptions.RequestException as e:
+        except Exception as e:
+            logger.error(f"请求失败，错误详情：{str(e)}")
+            return {"error": f"请求失败\n{str(e)}"}
+        
+    def post_schedule(self):
+        try:
+            logger.info(f"正在上传课表 {self.url}")
+            response = requests.post(self.url, proxies=proxies, timeout=30, json={"data": json.dumps(self.data)})
+            logger.debug(f"课表 {self.url} 请求响应: {response.status_code}")
+            if response.status_code == 200:
+                data = response.json()
+                return json.loads(data.get('data', "{'error': f\"没有 data 项\"}"))
+            else:
+                logger.error(f"无法上传课表 {self.url} 错误代码：{response.status_code}，响应内容: {response.text}")
+                return {'error': f"请求失败，错误代码：{response.status_code}"}
+        except Exception as e:
             logger.error(f"请求失败，错误详情：{str(e)}")
             return {"error": f"请求失败\n{str(e)}"}

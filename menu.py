@@ -659,6 +659,8 @@ class SettingsMenu(FluentWindow):
             super().__init__()
             self.setupUi(self)
 
+            self.url = file_path
+
             if file_path.startswith('http://'):
                 file_path = file_path.replace('http://', '')
             elif file_path.startswith('https://'):
@@ -709,6 +711,9 @@ class SettingsMenu(FluentWindow):
 
         self.config_new = self.cfInterface.findChild(PushButton, 'config_new')
         self.config_new.clicked.connect(self.cf_new_config)
+
+        self.config_upload = self.cfInterface.findChild(PushButton, 'config_upload')
+        self.config_upload.clicked.connect(self.cf_post_schedule)  # 上传配置
 
         self.import_from_file = self.cfInterface.findChild(PushButton, 'config_import')
         self.import_from_file.clicked.connect(self.cf_import_schedule)  # 从文件导入
@@ -1581,9 +1586,9 @@ class SettingsMenu(FluentWindow):
                 w.cancelButton.hide()
                 w.exec()
                 return        
-            self.version_thread = scheduleThread(url)
-            self.version_thread.update_signal.connect(self.cf_receive_schedule_from_db)
-            self.version_thread.start()
+            schedule_thread = scheduleThread(url)
+            schedule_thread.update_signal.connect(self.cf_receive_schedule_from_db)
+            schedule_thread.start()
             self.config_url.setEnabled(False)
             
         except Exception as e:
@@ -1604,6 +1609,41 @@ class SettingsMenu(FluentWindow):
         self.config_url.setEnabled(True)
         self.config_url.clear()
 
+    def cf_post_schedule(self):
+        url = self.cf_file_list[self.table.currentIndex().row()].url
+        try:
+            if url == '' or url == 'local':
+                n2_dialog = TextFieldMessageBox(
+                        self, '请输入课表链接',
+                        f'当前可缩写数据库：\n{list_.schedule_dbs}', '')
+                if not n2_dialog.exec():
+                    return
+                url = n2_dialog.textField.text()
+
+                for db in list_.schedule_dbs:
+                    if url.startswith(db):
+                        url = url.replace(db, list_.schedule_dbs[db])
+                        break
+                
+                self.cf_file_list[self.table.currentIndex().row()].url = url
+                self.cf_file_list[self.table.currentIndex().row()].file_path.setText(url.replace('https://', '').replace('http://',''))
+                schedule_center.update_url(url)
+
+            schedule_thread = scheduleThread(url, 'POST', data=schedule_center.schedule_data)
+            schedule_thread.update_signal.connect(self.cf_receive_schedule_from_post)
+            schedule_thread.start()
+            
+        except Exception as e:
+            logger.error(f'上传配置文件 {url} 时发生错误：{e}')
+            w = MessageBox('上传配置文件失败', f"{e}", self)
+            w.cancelButton.hide()
+            w.exec()
+
+    def cf_receive_schedule_from_post(self, data):
+        if data.get('error', None):
+            w = MessageBox('上传配置文件失败', data['error'], self)
+            w.cancelButton.hide()
+            w.exec()
 
     def sp_fill_grid_row(self):  # 填充预览表格
         subtitle = self.findChild(SubtitleLabel, 'subtitle_file')

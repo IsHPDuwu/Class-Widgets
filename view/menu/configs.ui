@@ -87,6 +87,13 @@
           </widget>
          </item>
          <item>
+          <widget class="PushButton" name="config_upload">
+           <property name="text">
+            <string>上传当前</string>
+           </property>
+          </widget>
+         </item>
+         <item>
           <widget class="PushButton" name="config_new">
            <property name="text">
             <string>新建</string>
