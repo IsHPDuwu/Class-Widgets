@@ -1615,7 +1615,7 @@ class SettingsMenu(FluentWindow):
             if url == '' or url == 'local':
                 n2_dialog = TextFieldMessageBox(
                         self, '请输入课表链接',
-                        f'当前可缩写数据库：\n{list_.schedule_dbs}', '')
+                        f'当前可缩写数据库：\n{list_.schedule_dbs}\n你可以使用缩写来代替完整的数据库链接', '')
                 if not n2_dialog.exec():
                     return
                 url = n2_dialog.textField.text()
