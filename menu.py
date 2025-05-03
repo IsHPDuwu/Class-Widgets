@@ -691,10 +691,11 @@ class SettingsMenu(FluentWindow):
         
     def cf_add_item(self, file_name, file_path, id):
         item_widget = self.cf_FileItem(file_name, file_path, id, self)
-        item = QListWidgetItem()
-        item.setSizeHint(QSize(350,60))
-        self.table.addItem(item)
-        self.table.setItemWidget(item, item_widget)
+        it = QListWidgetItem()
+        # 初始 sizeHint 只需定高，高度交给 gridSize 来控制宽度
+        it.setSizeHint(QSize(self.table.min_item_width, self.table.item_height))
+        self.table.addItem(it)
+        self.table.setItemWidget(it, item_widget)
         return item_widget
     
     def setup_configs_interface(self):  # 配置界面
@@ -712,21 +713,56 @@ class SettingsMenu(FluentWindow):
         self.import_from_file = self.cfInterface.findChild(PushButton, 'config_import')
         self.import_from_file.clicked.connect(self.cf_import_schedule)  # 从文件导入
 
-        self.table:ListWidget = self.cfInterface.findChild(ListWidget, 'config_table')
+        # 用自定义的 UniformListWidget 替换原 table
+        old = self.cfInterface.findChild(ListWidget, 'config_table')
+        parent_layout = old.parent().layout()
+        idx = parent_layout.indexOf(old)
+        parent_layout.takeAt(idx)
+        old.deleteLater()
+
+        class UniformListWidget(ListWidget):
+            def __init__(self, min_item_width=300, item_height=60, *args, **kwargs):
+                super().__init__(*args, **kwargs)
+                self.min_item_width = min_item_width
+                self.item_height = item_height
+                self.setFlow(self.LeftToRight)
+                self.setWrapping(True)
+                self.setMovement(self.Static)
+                self.setSpacing(4)
+                self.setContentsMargins(4,4,4,4)
+
+            def resizeEvent(self, e):
+                super().resizeEvent(e)
+                self._adjust_grid()
+
+            def _adjust_grid(self):
+                w = self.width()
+                m = self.contentsMargins()
+                w -= m.left()+m.right()
+                vsb = self.verticalScrollBar()
+                if vsb.isVisible(): w -= vsb.width()
+                sp = self.spacing()
+                cols = max(1, w // (self.min_item_width + sp))
+                cell_w = (w - sp*(cols-1)) // cols
+                self.setGridSize(QSize(cell_w, self.item_height))
+                self.doItemsLayout()
+
+        # 新建并插入
+        self.table = UniformListWidget(parent=self.cfInterface)
+        parent_layout.insertWidget(idx, self.table)
+
+        # 继续之前的逻辑
         self.table.clear()
-        self.table.setViewMode(ListWidget.IconMode)  # 允许横向排列
-        self.table.setFlow(ListWidget.LeftToRight)  # 设置从左到右排列
-        self.table.setResizeMode(ListWidget.Adjust)  # 调整大小
-        self.table.setWrapping(True)  # 允许换行
         self.table.setItemDelegate(self.cf_CustomDelegate(self.table))
 
         config_list = list_.get_schedule_config()
         self.cf_file_list = []
+        for i, cfg in enumerate(config_list):
+            url = file.load_from_json(cfg).get('url','local')
+            self.cf_file_list.append(self.cf_add_item(cfg, url, i))
 
-        for id in range(len(config_list)):
-            self.cf_file_list.append(self.cf_add_item(config_list[id],file.load_from_json(config_list[id]).get('url','local'),id))
-
-        self.table.setCurrentRow(list_.get_schedule_config().index(config_center.read_conf('General', 'schedule')))
+        cur = config_list.index(config_center.read_conf('General','schedule'))
+        self.table.setCurrentRow(cur)
         self.table.currentRowChanged.connect(self.cf_change_file)
 
     def setup_customization_interface(self):
