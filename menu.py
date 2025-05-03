@@ -6,6 +6,7 @@ import sys
 from copy import deepcopy
 from pathlib import Path
 from shutil import rmtree
+import re
 
 from PyQt5 import uic, QtCore
 from PyQt5.QtCore import Qt, QTime, QUrl, QDate, pyqtSignal, QSize
@@ -441,7 +442,7 @@ class TextFieldMessageBox(MessageBoxBase):
     """ Custom message box """
 
     def __init__(
-            self, parent=None, title='标题', text='请输入内容', default_text='', enable_check=False):
+            self, parent=None, title='标题', text='请输入内容', default_text='', enable_check: bool | list = False, check_func = None):
         super().__init__(parent)
         self.fail_color = (QColor('#c42b1c'), QColor('#ff99a4'))
         self.success_color = (QColor('#0f7b0f'), QColor('#6ccb5f'))
@@ -455,6 +456,7 @@ class TextFieldMessageBox(MessageBoxBase):
         self.tipsLabel = CaptionLabel()
         self.tipsLabel.setText('')
         self.yesButton.setText('确定')
+        self.check_func = check_func
 
         self.fieldLayout = QVBoxLayout()
         self.textField.setPlaceholderText(default_text)
@@ -482,6 +484,11 @@ class TextFieldMessageBox(MessageBoxBase):
         if f'{self.textField.text()}.json' in self.check_list:
             self.tipsLabel.setText('不可以和之前的课程名重复哦 o(TヘTo)')
             return
+        if not (self.check_func is None):
+            is_valid, message = self.check_func(self.textField.text())
+            if not is_valid:
+                self.tipsLabel.setText(message)
+                return 
 
         self.yesButton.setEnabled(True)
         self.tipsLabel.setTextColor(self.success_color[0], self.success_color[1])
@@ -1490,14 +1497,41 @@ class SettingsMenu(FluentWindow):
 
     def cf_new_config(self):
         try:
+            def is_valid_filename(file_name):
+                # 检查是否为空
+                if not file_name.strip():
+                    return False, "文件名不能为空"
+                
+                # 检查非法字符
+                invalid_chars = r'[\\/:*?"<>|]'
+                if re.search(invalid_chars, file_name):
+                    return False, "文件名包含非法字符"
+                
+                # 检查长度
+                if len(file_name) > 255:
+                    return False, "文件名过长"
+                
+                # 检查保留名称
+                reserved_names = {"CON", "PRN", "AUX", "NUL", "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8", "COM9",
+                                "LPT1", "LPT2", "LPT3", "LPT4", "LPT5", "LPT6", "LPT7", "LPT8", "LPT9"}
+                if file_name.upper() in reserved_names:
+                    return False, "文件名是保留名称"
+                
+                # 检查路径分隔符
+                if os.path.sep in file_name:
+                    return False, "文件名不能包含路径分隔符"
+                
+                return True, "文件名合法"
+            
             n2_dialog = TextFieldMessageBox(
                         self, '请输入新课表名称',
-                        '请命名您的课程表计划：', '新课表 - 1', list_.get_schedule_config()
+                        '请命名您的课程表计划：', '新课表 - 1', list_.get_schedule_config(), is_valid_filename
                     )
             if not n2_dialog.exec():
                 return
 
             new_name = n2_dialog.textField.text()
+
             list_.create_new_profile(f'{new_name}.json')
             config_center.write_conf('General', 'schedule', f'{new_name}.json')
             config_center.schedule_name = f'{new_name}.json'
