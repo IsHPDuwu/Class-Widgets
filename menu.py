@@ -1406,7 +1406,7 @@ class SettingsMenu(FluentWindow):
                     return 0
 
     def cf_import_schedule(self):  # 导入课程表
-        file_path, _ = QFileDialog.getOpenFileName(self, "选择文件", "", "Json 配置文件 (*.json);;CSES 通用课程表交换文件 (*.yaml)")
+        file_path, _ = QFileDialog.getOpenFileName(self, "选择文件", "", "支持的文件类型 (*.json *.yaml *.yml);;Json 配置文件 (*.json);;CSES 通用课程表交换文件 (*.yaml) (*.yaml *.yml)")
         if file_path:
             if file_path.endswith('.yaml') or file_path.endswith('.yml'):
                 return self.cf_import_schedule_cses(file_path)
