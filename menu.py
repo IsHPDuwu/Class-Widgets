@@ -658,10 +658,18 @@ class SettingsMenu(FluentWindow):
         def __init__(self, file_name='', file_path='local', id=None, parent=None):
             super().__init__()
             self.setupUi(self)
+
+            if file_path.startswith('http://'):
+                file_path = file_path.replace('http://', '')
+            elif file_path.startswith('https://'):
+                file_path = file_path.replace('https://', '')
+
             self.file_name = self.findChild(StrongBodyLabel, 'file_name')
             self.file_name.setText(file_name)
             self.file_path = self.findChild(BodyLabel, 'file_path')
             self.file_path.setText(file_path)
+            self.file_path.setWordWrap(True)
+            
             self.settings = self.findChild(DropDownToolButton, 'file_item_settings')
             self.settings.setIcon(fIcon.SETTING)
 
@@ -684,7 +692,7 @@ class SettingsMenu(FluentWindow):
     def cf_add_item(self, file_name, file_path, id):
         item_widget = self.cf_FileItem(file_name, file_path, id, self)
         item = QListWidgetItem()
-        item.setSizeHint(QSize(200,60))
+        item.setSizeHint(QSize(350,60))
         self.table.addItem(item)
         self.table.setItemWidget(item, item_widget)
         return item_widget
