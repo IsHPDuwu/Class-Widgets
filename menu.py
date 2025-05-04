@@ -442,7 +442,7 @@ class TextFieldMessageBox(MessageBoxBase):
     """ Custom message box """
 
     def __init__(
-            self, parent=None, title='标题', text='请输入内容', default_text='', enable_check: bool | list = False, check_func = None):
+            self, parent=None, title='标题', text='请输入内容', default_text='', enable_check = False, check_func = None):
         super().__init__(parent)
         self.fail_color = (QColor('#c42b1c'), QColor('#ff99a4'))
         self.success_color = (QColor('#0f7b0f'), QColor('#6ccb5f'))
