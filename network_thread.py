@@ -485,7 +485,6 @@ class weatherReportThread(QThread):  # 获取最新天气信息
 
 class scheduleThread(QThread):  # 获取课表
     update_signal = pyqtSignal(dict)
-    _instance_running = False
 
     def __init__(self,url:str, method:str='GET', data:dict=None):
         super().__init__()
@@ -509,10 +508,6 @@ class scheduleThread(QThread):  # 获取课表
         
         # 发射信号
         self.update_signal.emit(data)
-    
-    @classmethod
-    def is_running(cls):
-        return cls._instance_running
 
     def get_schedule(self):
         try:

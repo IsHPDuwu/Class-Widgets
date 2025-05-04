@@ -661,7 +661,7 @@ class SettingsMenu(FluentWindow):
         spin_prepare_time.setValue(int(config_center.read_conf('Toast', 'prepare_minutes')))
         spin_prepare_time.valueChanged.connect(self.save_prepare_time)  # 准备时间
 
-    class cf_FileItem(QWidget, uic.loadUiType(f'{base_directory}/view/menu/file_item.ui')[0]):
+    class cfFileItem(QWidget, uic.loadUiType(f'{base_directory}/view/menu/file_item.ui')[0]):
         def __init__(self, file_name='', file_path='local', id=None, parent=None):
             super().__init__()
             self.setupUi(self)
@@ -690,16 +690,18 @@ class SettingsMenu(FluentWindow):
 
             self.id = id
 
-    class cf_CustomDelegate(ListItemDelegate):
+    # patch: qfw 的 ListWidget 开多列除第一列外没有选中条
+    class cfCustomDelegate(ListItemDelegate):
         def _drawIndicator(self, painter: QPainter, option, index):
             # 计算绘制位置
             x, y, h = option.rect.x(), option.rect.y(), option.rect.height()
             ph = round(0.35*h if self.pressedRow == index.row() else 0.257*h)
             painter.setBrush(themeColor())
             painter.drawRoundedRect(x, ph + y, 3, h - 2*ph, 1.5, 1.5)
-        
+    # end of patch
+
     def cf_add_item(self, file_name, file_path, id):
-        item_widget = self.cf_FileItem(file_name, file_path, id, self)
+        item_widget = self.cfFileItem(file_name, file_path, id, self)
         it = QListWidgetItem()
         # 初始 sizeHint 只需定高，高度交给 gridSize 来控制宽度
         it.setSizeHint(QSize(self.table.min_item_width, self.table.item_height))
@@ -765,8 +767,7 @@ class SettingsMenu(FluentWindow):
 
         # 继续之前的逻辑
         self.table.clear()
-        self.table.setItemDelegate(self.cf_CustomDelegate(self.table))
-
+        
         config_list = list_.get_schedule_config()
         self.cf_file_list = []
         for i, cfg in enumerate(config_list):
@@ -1548,7 +1549,7 @@ class SettingsMenu(FluentWindow):
             self.table.setFlow(ListWidget.LeftToRight)  # 设置从左到右排列
             self.table.setResizeMode(ListWidget.Adjust)  # 调整大小
             self.table.setWrapping(True)  # 允许换行
-            self.table.setItemDelegate(self.cf_CustomDelegate(self.table))
+            self.table.setItemDelegate(self.cfCustomDelegate(self.table))
 
             config_list = list_.get_schedule_config()
             self.cf_file_list.clear()
@@ -1629,7 +1630,7 @@ class SettingsMenu(FluentWindow):
             logger.error(f'获取配置文件 {url} 时发生错误：{e}')
     
     def cf_receive_schedule_from_db(self, data):
-        if data.get('error', None):
+        if not (data.get('error', None) is None):
             w = MessageBox('获取配置文件失败', data['error'], self)
             w.cancelButton.hide()
             w.exec()
