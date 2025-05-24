@@ -547,7 +547,7 @@ def get_current_lesson_name():
                             current_state = 0
                         return
 
-def get_hide_status_from_current_state():
+def get_hide_status():
     # 1 -> hide, 0 -> show
     # 满分啦（
     # 祝所有用 Class Widgets 的、不用 Class Widgets 的学子体测满分啊（（
@@ -2072,7 +2072,7 @@ class DesktopWidget(QWidget):  # 主要小组件
         get_current_lesson_name()
         get_excluded_lessons()
         get_next_lessons()
-        hide_status = get_hide_status_from_current_state()
+        hide_status = get_hide_status()
 
         if (hide_mode:=config_center.read_conf('General', 'hide')) in ['1','2']:  # 上课自动隐藏
             if hide_status:
