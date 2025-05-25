@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>765</width>
+    <width>766</width>
     <height>1331</height>
    </rect>
   </property>
@@ -55,8 +55,8 @@
        <rect>
         <x>0</x>
         <y>0</y>
-        <width>717</width>
-        <height>1812</height>
+        <width>718</width>
+        <height>1930</height>
        </rect>
       </property>
       <layout class="QVBoxLayout" name="verticalLayout_21">
@@ -591,21 +591,14 @@
           </layout>
          </item>
          <item>
-          <widget class="StrongBodyLabel" name="StrongBodyLabel_13">
-           <property name="text">
-            <string>其他</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="CardWidget" name="CardWidget_5">
+          <widget class="CardWidget" name="CardWidget_17">
            <property name="minimumSize">
             <size>
              <width>0</width>
              <height>70</height>
             </size>
            </property>
-           <layout class="QHBoxLayout" name="horizontalLayout_4">
+           <layout class="QHBoxLayout" name="horizontalLayout_17">
             <property name="spacing">
              <number>16</number>
             </property>
@@ -622,12 +615,12 @@
              <number>16</number>
             </property>
             <item>
-             <layout class="QVBoxLayout" name="verticalLayout_8">
+             <layout class="QVBoxLayout" name="verticalLayout_28">
               <property name="spacing">
                <number>0</number>
               </property>
               <item>
-               <widget class="StrongBodyLabel" name="StrongBodyLabel_4">
+               <widget class="StrongBodyLabel" name="StrongBodyLabel_19">
                 <property name="sizePolicy">
                  <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
                   <horstretch>0</horstretch>
@@ -635,14 +628,14 @@
                  </sizepolicy>
                 </property>
                 <property name="text">
-                 <string>自动隐藏</string>
+                 <string>全屏自动隐藏</string>
                 </property>
                </widget>
               </item>
               <item>
-               <widget class="CaptionLabel" name="CaptionLabel_4">
+               <widget class="CaptionLabel" name="CaptionLabel_16">
                 <property name="text">
-                 <string>选择你需要的自动隐藏方式</string>
+                 <string>若启用，在当前前台应用最大化或全屏时自动隐藏</string>
                 </property>
                 <property name="wordWrap">
                  <bool>false</bool>
@@ -663,17 +656,179 @@
                 </property>
                </widget>
               </item>
+             </layout>
+            </item>
+            <item>
+             <widget class="SwitchButton" name="switch_fullscreen_hide">
+              <property name="onText">
+               <string>启用</string>
+              </property>
+              <property name="offText">
+               <string>禁用</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </widget>
+         </item>
+         <item>
+          <widget class="CardWidget" name="CardWidget_18">
+           <property name="minimumSize">
+            <size>
+             <width>0</width>
+             <height>70</height>
+            </size>
+           </property>
+           <layout class="QHBoxLayout" name="horizontalLayout_20">
+            <property name="spacing">
+             <number>16</number>
+            </property>
+            <property name="leftMargin">
+             <number>16</number>
+            </property>
+            <property name="topMargin">
+             <number>16</number>
+            </property>
+            <property name="rightMargin">
+             <number>16</number>
+            </property>
+            <property name="bottomMargin">
+             <number>16</number>
+            </property>
+            <item>
+             <layout class="QVBoxLayout" name="verticalLayout_30">
+              <property name="spacing">
+               <number>0</number>
+              </property>
               <item>
-               <widget class="HyperlinkLabel" name="what_is_hide_mode_3">
+               <widget class="StrongBodyLabel" name="StrongBodyLabel_21">
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+                  <horstretch>0</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
+                </property>
                 <property name="text">
-                 <string>什么是灵活隐藏？</string>
+                 <string>上课自动隐藏</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="CaptionLabel" name="CaptionLabel_18">
+                <property name="text">
+                 <string>若启用，在上课时自动隐藏</string>
+                </property>
+                <property name="wordWrap">
+                 <bool>false</bool>
+                </property>
+                <property name="lightColor" stdset="0">
+                 <color alpha="150">
+                  <red>0</red>
+                  <green>0</green>
+                  <blue>0</blue>
+                 </color>
+                </property>
+                <property name="darkColor" stdset="0">
+                 <color alpha="200">
+                  <red>255</red>
+                  <green>255</green>
+                  <blue>255</blue>
+                 </color>
                 </property>
                </widget>
               </item>
              </layout>
             </item>
             <item>
-             <widget class="ComboBox" name="hide_mode_combo"/>
+             <widget class="SwitchButton" name="switch_state_hide">
+              <property name="onText">
+               <string>启用</string>
+              </property>
+              <property name="offText">
+               <string>禁用</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </widget>
+         </item>
+         <item>
+          <widget class="CardWidget" name="CardWidget_19">
+           <property name="minimumSize">
+            <size>
+             <width>0</width>
+             <height>70</height>
+            </size>
+           </property>
+           <layout class="QHBoxLayout" name="horizontalLayout_21">
+            <property name="spacing">
+             <number>16</number>
+            </property>
+            <property name="leftMargin">
+             <number>16</number>
+            </property>
+            <property name="topMargin">
+             <number>16</number>
+            </property>
+            <property name="rightMargin">
+             <number>16</number>
+            </property>
+            <property name="bottomMargin">
+             <number>16</number>
+            </property>
+            <item>
+             <layout class="QVBoxLayout" name="verticalLayout_31">
+              <property name="spacing">
+               <number>0</number>
+              </property>
+              <item>
+               <widget class="StrongBodyLabel" name="StrongBodyLabel_22">
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+                  <horstretch>0</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
+                </property>
+                <property name="text">
+                 <string>允许手动控制</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="CaptionLabel" name="CaptionLabel_19">
+                <property name="text">
+                 <string>若启用，可手动控制隐藏模式，当前应隐藏状态改变时自动取消手动隐藏</string>
+                </property>
+                <property name="wordWrap">
+                 <bool>false</bool>
+                </property>
+                <property name="lightColor" stdset="0">
+                 <color alpha="150">
+                  <red>0</red>
+                  <green>0</green>
+                  <blue>0</blue>
+                 </color>
+                </property>
+                <property name="darkColor" stdset="0">
+                 <color alpha="200">
+                  <red>255</red>
+                  <green>255</green>
+                  <blue>255</blue>
+                 </color>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </item>
+            <item>
+             <widget class="SwitchButton" name="switch_manual_hide">
+              <property name="onText">
+               <string>启用</string>
+              </property>
+              <property name="offText">
+               <string>禁用</string>
+              </property>
+             </widget>
             </item>
            </layout>
           </widget>
@@ -723,7 +878,7 @@
               <item>
                <widget class="CaptionLabel" name="CaptionLabel_14">
                 <property name="text">
-                 <string>若启用，在遇到下方设置的特定课程时不会自动隐藏，以英文逗号分隔</string>
+                 <string>若启用，在遇到下方设置的特定课程时不会自动隐藏</string>
                 </property>
                 <property name="wordWrap">
                  <bool>false</bool>
@@ -804,7 +959,7 @@
               <item>
                <widget class="CaptionLabel" name="CaptionLabel_14">
                 <property name="text">
-                 <string>配合 特定课程不自动隐藏 使用</string>
+                 <string>以英文逗号分隔</string>
                 </property>
                 <property name="wordWrap">
                  <bool>false</bool>
@@ -838,6 +993,13 @@
              </widget>
             </item>
            </layout>
+          </widget>
+         </item>
+         <item>
+          <widget class="StrongBodyLabel" name="StrongBodyLabel_13">
+           <property name="text">
+            <string>其他</string>
+           </property>
           </widget>
          </item>
          <item>
@@ -1678,11 +1840,6 @@
   <customwidget>
    <class>TitleLabel</class>
    <extends>QLabel</extends>
-   <header>qfluentwidgets</header>
-  </customwidget>
-  <customwidget>
-   <class>HyperlinkLabel</class>
-   <extends>QPushButton</extends>
    <header>qfluentwidgets</header>
   </customwidget>
   <customwidget>

@@ -840,12 +840,20 @@ class SettingsMenu(FluentWindow):
         if os.name != 'nt':
             switch_startup.setEnabled(False)
 
-        hide_mode_combo = self.adInterface.findChild(ComboBox, 'hide_mode_combo')
-        hide_mode_combo.addItems(list_.hide_mode if os.name == 'nt' else list_.non_nt_hide_mode)
-        hide_mode_combo.setCurrentIndex(int(config_center.read_conf('General', 'hide')))
-        hide_mode_combo.currentIndexChanged.connect(
-            lambda: config_center.write_conf('General', 'hide', str(hide_mode_combo.currentIndex()))
-        )  # 隐藏模式
+        switch_fullscreen_hide = self.adInterface.findChild(SwitchButton, 'switch_fullscreen_hide')
+        switch_fullscreen_hide.setChecked(int(config_center.read_conf('General', 'fullscreen_hide')))
+        switch_fullscreen_hide.toggled.connect(lambda: config_center.write_conf('General', 'fullscreen_hide', str(int(switch_fullscreen_hide.isChecked()))))
+        # 全屏自动隐藏
+
+        switch_state_hide = self.adInterface.findChild(SwitchButton, 'switch_state_hide')
+        switch_state_hide.setChecked(int(config_center.read_conf('General', 'state_hide')))
+        switch_state_hide.toggled.connect(lambda: config_center.write_conf('General', 'state_hide', str(int(switch_state_hide.isChecked()))))
+        # 上课自动隐藏
+
+        switch_manual_hide = self.adInterface.findChild(SwitchButton, 'switch_manual_hide')
+        switch_manual_hide.setChecked(int(config_center.read_conf('General', 'manual_hide')))
+        switch_manual_hide.toggled.connect(lambda: config_center.write_conf('General', 'manual_hide', str(int(switch_manual_hide.isChecked()))))
+        # 手动隐藏
 
         hide_method_default = self.adInterface.findChild(RadioButton, 'hide_method_default')
         hide_method_default.setChecked(config_center.read_conf('General', 'hide_method') == '0')
