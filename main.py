@@ -552,7 +552,11 @@ def get_hide_status():
     # 满分啦（
     # 祝所有用 Class Widgets 的、不用 Class Widgets 的学子体测满分啊（（
     global current_state, current_lesson_name, excluded_lessons
-    return 1 if {'1': current_state, '2': check_windows_maximize() or check_fullscreen(), '3': current_state}[config_center.read_conf('General', 'hide')] and not (current_lesson_name in excluded_lessons) else 0
+    return 1 if {
+        '1': lambda: current_state,
+        '2': lambda: check_windows_maximize() or check_fullscreen(),
+        '3': lambda: current_state
+    }[config_center.read_conf('General', 'hide')]() and not (current_lesson_name in excluded_lessons) else 0
 
 
 # 定义 RECT 结构体
