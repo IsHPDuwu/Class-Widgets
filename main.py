@@ -553,6 +553,7 @@ def get_hide_status():
     # 祝所有用 Class Widgets 的、不用 Class Widgets 的学子体测满分啊（（
     global current_state, current_lesson_name, excluded_lessons
     return 1 if {
+        '0': lambda: 0,
         '1': lambda: current_state,
         '2': lambda: check_windows_maximize() or check_fullscreen(),
         '3': lambda: current_state
