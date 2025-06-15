@@ -461,7 +461,7 @@ def get_next_lessons_text() -> str:
     if not next_lessons:
         return '当前暂无课程'
     if config_center.read_conf('General', 'enable_display_full_next_lessons') == '0':
-        return utils.slice_str_by_length(f"{next_lessons[0]} {"..." if len(next_lessons) > 1 else ""}", MAX_DISPLAY_LENGTH)
+        return utils.slice_str_by_length(f"{next_lessons[0]} {'...' if len(next_lessons) > 1 else ''}", MAX_DISPLAY_LENGTH)
     if utils.get_str_length(full_text := (' '.join(next_lessons))) <= MAX_DISPLAY_LENGTH:
         return full_text
     return utils.slice_str_by_length(' '.join([list_.get_subject_abbreviation(x) for x in next_lessons[:5]]), MAX_DISPLAY_LENGTH)
