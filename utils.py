@@ -5,7 +5,8 @@ import psutil
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QSystemTrayIcon, QApplication
 from loguru import logger
-from PyQt5.QtCore import QSharedMemory, QTimer, QObject
+from PyQt5.QtCore import QSharedMemory, QTimer, QObject, pyqtSignal
+import darkdetect
 import datetime as dt
 
 from file import base_directory, config_center
@@ -110,6 +111,54 @@ def calculate_size(p_w=0.6, p_h=0.7):  # 计算尺寸
 
     return (width, height), (int(screen_width / 2 - width / 2), 150)
 
+def update_tray_tooltip():
+    """更新托盘文字"""
+    if hasattr(sys.modules[__name__], 'tray_icon'):
+        tray_instance = getattr(sys.modules[__name__], 'tray_icon')
+        if tray_instance is not None:
+            schedule_name_from_conf = config_center.read_conf('General', 'schedule')
+            if schedule_name_from_conf:
+                try:
+                    schedule_display_name = schedule_name_from_conf
+                    if schedule_display_name.endswith('.json'):
+                        schedule_display_name = schedule_display_name[:-5]
+                    tray_instance.setToolTip(f'Class Widgets - "{schedule_display_name}"')
+                    logger.info(f'托盘文字更新: "Class Widgets - {schedule_display_name}"')
+                except Exception as e:
+                    logger.error(f"更新托盘提示时发生错误: {e}")
+            else:
+                tray_instance.setToolTip("Class Widgets - 未加载课表")
+                logger.info(f'托盘文字更新: "Class Widgets - 未加载课表"')
+
+class DarkModeWatcher(QObject):
+    darkModeChanged = pyqtSignal(bool)  # 发出暗黑模式变化信号
+    def __init__(self, interval=500, parent=None):
+        super().__init__(parent)
+        self._isDarkMode = darkdetect.isDark()  # 初始状态
+        self._timer = QTimer(self)
+        self._timer.timeout.connect(self._checkTheme)
+        self._timer.start(interval)  # 轮询间隔（毫秒）
+
+    def _checkTheme(self):
+        currentMode = darkdetect.isDark()
+        if currentMode != self._isDarkMode:
+            self._isDarkMode = currentMode
+            self.darkModeChanged.emit(currentMode)  # 发出变化信号
+
+    def isDark(self):
+        """返回当前是否暗黑模式"""
+        return self._isDarkMode
+
+    def stop(self):
+        """停止监听"""
+        self._timer.stop()
+
+    def start(self, interval=None):
+        """开始监听"""
+        if interval:
+            self._timer.setInterval(interval)
+        self._timer.start()
+
 
 class TrayIcon(QSystemTrayIcon):
     def __init__(self, parent=None):
@@ -212,6 +261,54 @@ class UnionUpdateTimer(QObject):
             except Exception as e:
                 logger.error(f"停止 QTimer 时发生未知错误: {e}")
 
+def get_str_length(text: str) -> int:
+    """
+    计算字符串长度，汉字计为2，英文和数字计为1
+    
+    Args:
+        text: 要计算的字符串
+    
+    Returns:
+        int: 字符串长度
+    """
+    length = 0
+    for char in text:
+        # 使用 ord() 获取字符的 Unicode 码点
+        # 如果大于 0x4e00 (中文范围开始) 就是汉字，计为2
+        if ord(char) > 0x4e00:
+            length += 2
+        else:
+            length += 1
+    return length
+
+def slice_str_by_length(text: str, max_length: int) -> str:
+    """
+    根据指定长度切割字符串，汉字计为2，英文和数字计为1
+    
+    Args:
+        text: 要切割的字符串
+        max_length: 最大长度
+    
+    Returns:
+        str: 切割后的字符串
+    """
+    if not text or max_length <= 0:
+        return ""
+    
+    if get_str_length(text) <= max_length:
+        return text
+
+    current_length = 0
+    result = []
+
+    for char in text:
+        char_length = 2 if ord(char) > 0x4e00 else 1
+        if current_length + char_length > max_length:
+            break
+        result.append(char)
+        current_length += char_length
+
+    return ''.join(result)
 
 tray_icon = None
 update_timer = UnionUpdateTimer()

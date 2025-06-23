@@ -1,31 +1,35 @@
 import datetime as dt
 import json
 import os
+import platform
 import subprocess
 import sys
 from copy import deepcopy
 from pathlib import Path
 from shutil import rmtree
 import re
+import zipfile
+import shutil
+import asyncio
 
 from PyQt5 import uic, QtCore
-from PyQt5.QtCore import Qt, QTime, QUrl, QDate, pyqtSignal, QSize
+from PyQt5.QtCore import Qt, QTime, QUrl, QDate, pyqtSignal, QSize, QThread
 from PyQt5.QtGui import QIcon, QDesktopServices, QColor
 # from PyQt5.QtPrintSupport import QPrinter
 from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtGui import QPainter
 from PyQt5.QtWidgets import QApplication, QHeaderView, QTableWidgetItem, QLabel, QHBoxLayout, QSizePolicy, \
-    QSpacerItem, QFileDialog, QVBoxLayout, QScroller, QWidget, QListWidgetItem
+    QSpacerItem, QFileDialog, QVBoxLayout, QScroller, QWidget, QListWidgetItem, QWidget
 from packaging.version import Version
 from loguru import logger
 from qfluentwidgets import (
     Theme, setTheme, FluentWindow, FluentIcon as fIcon, ToolButton, ListWidget, ComboBox, CaptionLabel,
-    SpinBox, LineEdit, PrimaryPushButton, TableWidget, Flyout, InfoBarIcon,
+    SpinBox, LineEdit, PrimaryPushButton, TableWidget, Flyout, InfoBarIcon, InfoBar, InfoBarPosition,
     FlyoutAnimationType, NavigationItemPosition, MessageBox, SubtitleLabel, PushButton, SwitchButton,
     CalendarPicker, BodyLabel, ColorDialog, isDarkTheme, TimeEdit, EditableComboBox, MessageBoxBase,
     SearchLineEdit, Slider, PlainTextEdit, ToolTipFilter, ToolTipPosition, RadioButton, HyperlinkLabel,
     PrimaryDropDownPushButton, Action, RoundMenu, CardWidget, ImageLabel, StrongBodyLabel,
-    TransparentDropDownToolButton, Dialog, SmoothScrollArea, TransparentToolButton, TableWidget, HyperlinkButton, DropDownToolButton
+    TransparentDropDownToolButton, Dialog, SmoothScrollArea, TransparentToolButton, TableWidget, HyperlinkButton, DropDownToolButton, HyperlinkLabel, themeColor
 )
 from qfluentwidgets.common import themeColor
 from qfluentwidgets.components.widgets import ListItemDelegate
@@ -34,10 +38,13 @@ import conf
 import list_ as list_
 import tip_toast
 import utils
-import weather_db
-import weather_db as wd
+from utils import update_tray_tooltip
+import weather
+import weather as wd
 from conf import base_directory
 from cses_mgr import CSES_Converter
+from generate_speech import get_tts_voices, get_voice_id_by_name, get_voice_name_by_id, get_available_engines
+import generate_speech
 from file import config_center, schedule_center
 import file
 from network_thread import VersionThread, scheduleThread
@@ -274,6 +281,9 @@ class licenseDialog(MessageBoxBase):  # 显示软件许可协议
 
 class PluginSettingsDialog(MessageBoxBase):  # 插件设置对话框
     def __init__(self, plugin_dir=None, parent=None):
+        if plugin_dir not in p_loader.plugins_settings:
+            return
+            
         super().__init__(parent)
         self.plugin_widget = None
         self.plugin_dir = plugin_dir
@@ -296,13 +306,15 @@ class PluginSettingsDialog(MessageBoxBase):  # 插件设置对话框
 class PluginCard(CardWidget):  # 插件卡片
     def __init__(
             self, icon, title='Unknown', content='Unknown', version='1.0.0', plugin_dir='', author=None, parent=None,
-            enable_settings=None
+            enable_settings=None, url=''
     ):
         super().__init__(parent)
         icon_radius = 5
         self.plugin_dir = plugin_dir
         self.title = title
         self.parent = parent
+        self.url = url
+        self.enable_settings = enable_settings
 
         self.iconWidget = ImageLabel(icon)  # 插件图标
         self.titleLabel = StrongBodyLabel(title, self)  # 插件名
@@ -315,27 +327,46 @@ class PluginCard(CardWidget):  # 插件卡片
         self.settingsBtn = TransparentToolButton()  # 设置按钮
         self.settingsBtn.hide()
 
-        self.hBoxLayout = QHBoxLayout(self)
-        self.hBoxLayout_Title = QHBoxLayout(self)
-        self.vBoxLayout = QVBoxLayout(self)
+        self.hBoxLayout = QHBoxLayout()
+        self.hBoxLayout_Title = QHBoxLayout()
+        self.vBoxLayout = QVBoxLayout()
 
-        self.moreMenu.addActions([
+        menu_actions = [
             Action(
                 fIcon.FOLDER, f'打开“{title}”插件文件夹',
                 triggered=lambda: open_dir(os.path.join(base_directory, conf.PLUGINS_DIR, self.plugin_dir))
-            ),
+            )
+        ]
+        if self.url:
+            menu_actions.append(
+                Action(
+                    fIcon.LINK, f'访问“{title}”插件页面',
+                    triggered=lambda: QDesktopServices.openUrl(QUrl(self.url))
+                )
+            )
+        menu_actions.append(
             Action(
                 fIcon.DELETE, f'卸载“{title}”插件',
                 triggered=self.remove_plugin
             )
-        ])
+        )
+        self.moreMenu.addActions(menu_actions)
 
+        plugin_config = conf.load_plugin_config()
+        is_temp_disabled = plugin_dir in plugin_config.get('temp_disabled_plugins', [])
+        
         if plugin_dir in enabled_plugins['enabled_plugins']:  # 插件是否启用
             self.enableButton.setChecked(True)
-            if enable_settings:
+            if enable_settings and plugin_dir in p_loader.plugins_settings:
                 self.moreMenu.addSeparator()
-                self.moreMenu.addAction(Action(fIcon.SETTING, f'“{title}”插件设置', triggered=self.show_settings))
+                self.moreMenu.addAction(Action(fIcon.SETTING, f'"{title}"插件设置', triggered=self.show_settings))
                 self.settingsBtn.show()
+        if is_temp_disabled:
+            self.enableButton.setEnabled(False)
+            self.enableButton.setChecked(False)
+            self.enableButton.setToolTip('此插件被临时禁用,重启后将尝试重新加载')
+            self.titleLabel.setText(f'{title} (已临时禁用)')
+            self.titleLabel.setStyleSheet('color: #999999;')
 
         self.setFixedHeight(73)
         self.iconWidget.setFixedSize(48, 48)
@@ -376,6 +407,7 @@ class PluginCard(CardWidget):  # 插件卡片
         self.hBoxLayout.addWidget(self.settingsBtn, 0, Qt.AlignmentFlag.AlignRight)
         self.hBoxLayout.addWidget(self.enableButton, 0, Qt.AlignmentFlag.AlignRight)
         self.hBoxLayout.addWidget(self.moreButton, 0, Qt.AlignmentFlag.AlignRight)
+        self.setLayout(self.hBoxLayout)
 
     def set_enable(self):
         global enabled_plugins
@@ -388,7 +420,8 @@ class PluginCard(CardWidget):  # 插件卡片
 
     def show_settings(self):
         w = PluginSettingsDialog(self.plugin_dir, self.parent)
-        w.exec()
+        if w:
+            w.exec()
 
     def remove_plugin(self):
         alert = MessageBox(f"您确定要删除插件“{self.title}”吗？", "删除此插件后，将无法恢复。", self.parent)
@@ -418,24 +451,38 @@ class PluginCard(CardWidget):  # 插件卡片
             """)
         alert.cancelButton.setText('我再想想……')
         if alert.exec():
-            global enabled_plugins
-            if self.plugin_dir in enabled_plugins:  # 移除启动项
-                enabled_plugins['enabled_plugins'].remove(self.plugin_dir)
-                conf.save_plugin_config(enabled_plugins)
-            try:
-                with open(f"{base_directory}/plugins/plugins_from_pp.json", 'r', encoding='utf-8') as f:  # 移除插件广场安装记录
-                    installed_plugins = json.load(f).get('plugins')
-                    installed_plugins.remove(self.plugin_dir)
-                with open(f"{base_directory}/plugins/plugins_from_pp.json", 'w', encoding='utf-8') as f2:  # 移除插件广场安装记录
-                    json.dump({"plugins": installed_plugins}, f2, ensure_ascii=False, indent=4)
-            except Exception as e:
-                logger.error(f"保存已安装插件失败：{e}")
-            try:
-                rmtree(os.path.join(base_directory, conf.PLUGINS_DIR, self.plugin_dir))  # 删除插件
-                self.setParent(None)
+            success = p_loader.delete_plugin(self.plugin_dir)
+            if success:
+                try:
+                    with open(f'{base_directory}/plugins/plugins_from_pp.json', 'r', encoding='utf-8') as f:
+                        installed_data = json.load(f)
+                    installed_plugins = installed_data.get('plugins', [])
+                    if self.plugin_dir in installed_plugins:
+                        installed_plugins.remove(self.plugin_dir)
+                        conf.save_installed_plugin(installed_plugins)
+                except Exception as e:
+                    logger.error(f"更新已安装插件列表失败: {e}")
+
+                InfoBar.success(
+                    title='卸载成功',
+                    content=f'插件 “{self.title}” 已卸载。请重启 Class Widgets 以完全移除。',
+                    orient=Qt.Horizontal,
+                    isClosable=True,
+                    position=InfoBarPosition.BOTTOM_RIGHT,
+                    duration=5000,
+                    parent=self.window()
+                )
                 self.deleteLater()  # 删除卡片
-            except Exception as e:
-                logger.error(f'删除插件“{self.title}”时发生错误：{e}')
+            else:
+                InfoBar.error(
+                    title='卸载失败',
+                    content=f'卸载插件 “{self.title}” 时出错，请查看日志获取详细信息。',
+                    orient=Qt.Horizontal,
+                    isClosable=True,
+                    position=InfoBarPosition.BOTTOM_RIGHT,
+                    duration=5000,
+                    parent=self.window()
+                )
 
 
 class TextFieldMessageBox(MessageBoxBase):
@@ -495,13 +542,112 @@ class TextFieldMessageBox(MessageBoxBase):
         self.tipsLabel.setText('很好！就这样！ヾ(≧▽≦*)o')
 
 
+class TTSVoiceLoaderThread(QThread):
+    voicesLoaded = pyqtSignal(list)
+    errorOccurred = pyqtSignal(str)
+    previewFinished = pyqtSignal(bool)
+
+    def __init__(self, engine_filter=None, parent=None):
+        super().__init__(parent)
+        self.engine_filter = engine_filter
+
+    def run(self):
+        try:
+            if self.engine_filter == "pyttsx3" and platform.system() != "Windows":
+                logger.warning("当前系统不是Windows,跳过pyttsx3 TTS预览")
+                self.previewFinished.emit(False)
+                return
+            if self.isInterruptionRequested():
+                return
+            if self.engine_filter == "pyttsx3" and platform.system() != "Windows":
+                logger.warning("当前系统不是Windows,跳过pyttsx3语音加载")
+                self.voicesLoaded.emit([])
+                return
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            available_voices, error_message = loop.run_until_complete(get_tts_voices(engine_filter=self.engine_filter))
+            loop.close()
+            if self.isInterruptionRequested():
+                return
+
+            if error_message:
+                self.errorOccurred.emit(error_message)
+            else:
+                self.voicesLoaded.emit(available_voices)
+        except Exception as e:
+            logger.error(f"加载TTS语音列表时出错: {e}")
+            self.errorOccurred.emit(str(e))
+
+
+class TTSPreviewThread(QThread):
+    previewFinished = pyqtSignal(bool)
+    previewError = pyqtSignal(str)
+
+    def __init__(self, text, engine, voice, parent=None):
+        super().__init__(parent)
+        self.text = text
+        self.engine = engine
+        self.voice = voice
+
+    def run(self):
+        try:
+            if self.engine == "pyttsx3" and platform.system() != "Windows":
+                logger.warning("当前系统不是Windows，跳过pyttsx3 TTS预览。")
+                self.previewFinished.emit(False)
+                return
+            if self.isInterruptionRequested():
+                logger.info("TTS预览线程收到中断请求，正在退出...")
+                return
+                
+            from generate_speech import generate_speech_sync, TTSEngine
+            from play_audio import play_audio
+            import os
+            
+            logger.info(f"使用引擎 {self.engine} 生成预览语音")
+            audio_file = generate_speech_sync(
+                text=self.text,
+                engine=self.engine,
+                voice=self.voice,
+                auto_fallback=True,
+                timeout=10.0
+            )
+            
+            # 再次检查是否有中断请求
+            if self.isInterruptionRequested():
+                logger.info("TTS预览线程收到中断请求，正在退出...")
+                # 删除已生成的音频文件
+                TTSEngine.delete_audio_file(audio_file)
+                return
+            
+            # 检查文件是否存在且有效
+            if not os.path.exists(audio_file):
+                raise FileNotFoundError(f"生成的音频文件不存在: {audio_file}")
+                
+            # 检查文件大小是否正常（小于10字节的文件可能是损坏的）
+            file_size = os.path.getsize(audio_file)
+            if file_size < 10:
+                logger.warning(f"生成的音频文件可能无效，大小仅为 {file_size} 字节: {audio_file}")
+                # 删除可能损坏的文件
+                TTSEngine.delete_audio_file(audio_file)
+                raise ValueError(f"生成的音频文件可能无效，大小仅为 {file_size} 字节")
+                
+            play_audio(audio_file, tts_delete_after=True)
+            self.previewFinished.emit(True)
+        except Exception as e:
+            logger.error(f"TTS预览生成失败: {str(e)}")
+            self.previewError.emit(str(e))
+
+
 class SettingsMenu(FluentWindow):
     closed = pyqtSignal()
 
     def __init__(self):
         super().__init__()
+        self.tts_voice_loader_thread = None
         self.button_clear_log = None
         self.version_thread = None
+        self.engine_selector = None # TTS引擎选择器
+        self.current_loaded_engine = config_center.read_conf('TTS', 'engine') # 加载的TTS引擎
 
         # 创建子页面
         self.spInterface = uic.loadUi(f'{base_directory}/view/menu/preview.ui')  # 预览
@@ -526,6 +672,10 @@ class SettingsMenu(FluentWindow):
         self.hdInterface.setObjectName("hdInterface")
         self.plInterface = uic.loadUi(f'{base_directory}/view/menu/plugin_mgr.ui')  # 插件
         self.plInterface.setObjectName("plInterface")
+        self.version_number_label = self.ifInterface.findChild(QLabel, 'version_number_label')
+        self.build_commit_label = self.ifInterface.findChild(QLabel, 'build_commit_label')
+        self.build_uuid_label = self.ifInterface.findChild(QLabel, 'build_uuid_label')
+        self.build_date_label = self.ifInterface.findChild(QLabel, 'build_date_label')
 
         self.init_nav()
         self.init_window()
@@ -557,6 +707,21 @@ class SettingsMenu(FluentWindow):
         enabled_plugins = conf.load_plugin_config()  # 加载启用的插件
         plugin_dict = (conf.load_plugins())  # 加载插件信息
 
+        self.plugin_search = self.findChild(SearchLineEdit, 'plugin_search')
+        self.filter_combo = self.findChild(ComboBox, 'filter_combo')
+        self.refresh_btn = self.findChild(ToolButton, 'refresh_btn')
+        self.import_plugin_btn = self.findChild(PushButton, 'import_plugin_btn')
+        self.plugin_count_label = self.findChild(CaptionLabel, 'plugin_count_label')
+        self.plugin_card_layout = self.findChild(QVBoxLayout, 'plugin_card_layout')
+        self.tips_plugin_empty = self.findChild(QLabel, 'tips_plugin_empty')
+        self.all_plugin_cards = []
+        self.filter_combo.addItems(['全部插件', '已启用', '已禁用', '有设置项', '无设置项'])
+        self.refresh_btn.setIcon(fIcon.SYNC)
+        self.plugin_search.textChanged.connect(self.filter_plugins)
+        self.filter_combo.currentTextChanged.connect(self.filter_plugins)
+        self.refresh_btn.clicked.connect(self.refresh_plugin_list)
+        self.import_plugin_btn.clicked.connect(self.import_plugin_from_file)
+
         open_pp = self.findChild(PushButton, 'open_plugin_plaza')
         open_pp.clicked.connect(open_plaza)  # 打开插件广场
 
@@ -569,13 +734,29 @@ class SettingsMenu(FluentWindow):
             lambda: config_center.write_conf('Plugin', 'auto_delay', str(auto_delay.value())))
         # 设置自动化延迟
 
-        plugin_card_layout = self.findChild(QVBoxLayout, 'plugin_card_layout')
         open_plugin_folder = self.findChild(PushButton, 'open_plugin_folder')
         open_plugin_folder.clicked.connect(lambda: open_dir(os.path.join(base_directory, conf.PLUGINS_DIR)))  # 打开插件目录
+
+        # 安全插件加载开关
+        switch_safe_plugin = self.findChild(SwitchButton, 'switch_safe_plugin')
+        switch_safe_plugin.setChecked(int(config_center.read_conf('Other', 'safe_plugin')))
+        switch_safe_plugin.checkedChanged.connect(
+            lambda checked: switch_checked('Other', 'safe_plugin', checked)
+        )
 
         if not p_loader.plugins_settings:  # 若插件设置为空
             p_loader.load_plugins()  # 加载插件设置
 
+        self.load_plugin_cards()
+        self.update_plugin_count()
+
+    def load_plugin_cards(self):
+        """加载插件卡片"""
+        self.clear_plugin_cards()
+        container_widget = self.plugin_card_layout.parentWidget()
+        if container_widget:
+            container_widget.setUpdatesEnabled(False)
+        
         for plugin in plugin_dict:
             if (Path(conf.PLUGINS_DIR) / plugin / 'icon.png').exists():  # 若插件目录存在icon.png
                 icon_path = f'{base_directory}/plugins/{plugin}/icon.png'
@@ -589,13 +770,220 @@ class SettingsMenu(FluentWindow):
                 plugin_dir=plugin,
                 content=plugin_dict[plugin]['description'],
                 enable_settings=plugin_dict[plugin]['settings'],
+                url=plugin_dict[plugin].get('url', ''),
                 parent=self
             )
-            plugin_card_layout.addWidget(card)
+            self.all_plugin_cards.append(card)
+            self.plugin_card_layout.addWidget(card)
 
-        tips_plugin_empty = self.findChild(QLabel, 'tips_plugin_empty')
         if plugin_dict:
-            tips_plugin_empty.hide()
+            self.tips_plugin_empty.hide()
+        else:
+            self.tips_plugin_empty.show()
+        if container_widget:
+            container_widget.setUpdatesEnabled(True)
+    
+    def clear_plugin_cards(self):
+        """清空插件卡片"""
+        container_widget = self.plugin_card_layout.parentWidget()
+        if container_widget:
+            container_widget.setUpdatesEnabled(False)
+        for card in self.all_plugin_cards:
+            card.hide()
+            self.plugin_card_layout.removeWidget(card)
+            card.deleteLater()
+        self.all_plugin_cards.clear()
+        if container_widget:
+            container_widget.setUpdatesEnabled(True)
+    
+    def update_plugin_count(self):
+        """更新计数显示"""
+        total_count = len(plugin_dict)
+        enabled_count = len([p for p in plugin_dict if plugin_dict[p]['name'] in enabled_plugins])
+        self.plugin_count_label.setText(f'已安装 {total_count} 个插件，已启用 {enabled_count} 个')
+    
+    def filter_plugins(self):
+        """根据搜索条件和过滤器过滤插件"""
+        search_text = self.plugin_search.text().lower()
+        filter_type = self.filter_combo.currentText()
+        
+        visible_count = 0
+        valid_cards = []
+        for card in self.all_plugin_cards:
+            try:
+                _ = card.title
+                valid_cards.append(card)
+            except RuntimeError:
+                continue
+        self.all_plugin_cards = valid_cards
+        
+        for card in self.all_plugin_cards:
+            should_show = True
+            if search_text:
+                plugin_name = card.title.lower()
+                plugin_author = card.authorLabel.text().lower() if card.authorLabel.text() else ''
+                plugin_desc = card.contentLabel.text().lower()
+                if not (search_text in plugin_name or search_text in plugin_author or search_text in plugin_desc):
+                    should_show = False
+            if should_show and filter_type != '全部插件':
+                is_enabled = card.plugin_dir in enabled_plugins.get('enabled_plugins', [])
+                has_settings = bool(card.enable_settings)
+                if filter_type == '已启用' and not is_enabled:
+                    should_show = False
+                elif filter_type == '已禁用' and is_enabled:
+                    should_show = False
+                elif filter_type == '有设置项' and not has_settings:
+                    should_show = False
+                elif filter_type == '无设置项' and has_settings:
+                    should_show = False
+            card.setVisible(should_show)
+            if should_show:
+                visible_count += 1
+        if visible_count == 0:
+            self.tips_plugin_empty.setText('没有找到匹配的插件')
+            self.tips_plugin_empty.show()
+        else:
+            self.tips_plugin_empty.hide()
+    
+    def refresh_plugin_list(self):
+        """刷新插件列表"""
+        global plugin_dict, enabled_plugins
+        enabled_plugins = conf.load_plugin_config()
+        plugin_dict = conf.load_plugins()
+        self.load_plugin_cards()
+        self.update_plugin_count()
+        self.filter_plugins()
+        InfoBar.success(
+            title='刷新完成',
+            content='插件列表已刷新',
+            orient=Qt.Horizontal,
+            isClosable=True,
+            position=InfoBarPosition.BOTTOM_RIGHT,
+            duration=3000,
+            parent=self.window()
+        )
+    
+    def import_plugin_from_file(self):
+        """从文件导入插件"""
+        file_path, _ = QFileDialog.getOpenFileName(
+            self, 
+            '选择插件文件', 
+            '', 
+            'ZIP文件 (*.zip);;JSON配置文件 (*.json);;所有文件 (*)'
+        )
+        if not file_path:
+            return
+        try:
+            if file_path.endswith('.json') and os.path.basename(file_path) == 'plugin.json':
+                self._import_from_plugin_json(file_path)
+            else:
+                self._import_from_zip(file_path)
+                
+        except Exception as e:
+            logger.error(f"插件导入失败 - 未知错误: {file_path}, 错误类型: {type(e).__name__}, 错误详情: {str(e)}")
+            self._show_error_dialog(f'导入插件时发生错误：{str(e)}')
+    
+    def _import_from_plugin_json(self, json_file_path):
+        try:
+            with open(json_file_path, 'r', encoding='utf-8') as f:
+                plugin_info = json.loads(f.read())
+            plugin_name = plugin_info.get('name', '未知插件')
+            source_dir = os.path.dirname(json_file_path)
+            plugin_dir_name = os.path.basename(source_dir)
+            target_dir = os.path.join(base_directory, conf.PLUGINS_DIR, plugin_dir_name)
+            if os.path.exists(target_dir):
+                reply = MessageBox(
+                    '插件已存在', 
+                    f'插件 "{plugin_name}" 已存在，是否覆盖？', 
+                    self
+                ).exec_()
+                if reply != MessageBox.Yes:
+                    return
+                shutil.rmtree(target_dir)
+            shutil.copytree(source_dir, target_dir)
+            self.refresh_plugin_list()
+            w = MessageBox(
+                '导入成功', 
+                f'插件 "{plugin_name}" 导入成功！\n重启应用后生效。', 
+                self
+            )
+            w.yesButton.setText('好')
+            w.cancelButton.hide()
+            w.exec_()
+            
+        except json.JSONDecodeError as e:
+            logger.error(f"插件导入失败 - JSON配置文件格式错误: {json_file_path}, 错误详情: {str(e)}")
+            self._show_error_dialog('插件配置文件格式错误')
+        except Exception as e:
+            logger.error(f"插件导入失败 - 文件夹复制错误: {json_file_path}, 错误详情: {str(e)}")
+            self._show_error_dialog(f'复制插件文件夹时发生错误：{str(e)}')
+    
+    def _import_from_zip(self, zip_file_path):
+        try:
+            with zipfile.ZipFile(zip_file_path, 'r') as zip_ref:
+                if 'plugin.json' not in zip_ref.namelist():
+                    self._show_error_dialog('无效的插件文件：缺少 plugin.json 配置文件')
+                    return
+                with zip_ref.open('plugin.json') as f:
+                    plugin_info = json.loads(f.read().decode('utf-8'))
+                plugin_name = plugin_info.get('name', '未知插件')
+                plugin_dir_name = os.path.splitext(os.path.basename(zip_file_path))[0]
+                target_dir = os.path.join(base_directory, conf.PLUGINS_DIR, plugin_dir_name)
+                if os.path.exists(target_dir):
+                    reply = MessageBox(
+                        '插件已存在', 
+                        f'插件 "{plugin_name}" 已存在，是否覆盖？', 
+                        self
+                    ).exec_()
+                    if reply != MessageBox.Yes:
+                        return
+                    shutil.rmtree(target_dir)
+                zip_ref.extractall(target_dir)
+                self.refresh_plugin_list()
+                w = MessageBox(
+                    '导入成功', 
+                    f'插件 "{plugin_name}" 导入成功！\n重启应用后生效。', 
+                    self
+                )
+                w.yesButton.setText('好')
+                w.cancelButton.hide()
+                w.exec_()
+                
+        except zipfile.BadZipFile as e:
+            logger.error(f"插件导入失败 - 无效的ZIP文件: {zip_file_path}, 错误详情: {str(e)}")
+            self._show_error_dialog('无效的ZIP文件')
+        except json.JSONDecodeError as e:
+            logger.error(f"插件导入失败 - JSON配置文件格式错误: {zip_file_path}, 错误详情: {str(e)}")
+            self._show_error_dialog('插件配置文件格式错误')
+
+    def _show_error_dialog(self, message):
+        w = MessageBox('错误', message, self)
+        w.yesButton.setText('好')
+        w.yesButton.setStyleSheet("""
+            PushButton{
+                border-radius: 5px;
+                padding: 5px 12px 6px 12px;
+                outline: none;
+            }
+            PrimaryPushButton{
+                color: white;
+                background-color: #FF6167;
+                border: 1px solid #FF8585;
+                border-bottom: 1px solid #943333;
+            }
+            PrimaryPushButton:hover{
+                background-color: #FF7E83;
+                border: 1px solid #FF8084;
+                border-bottom: 1px solid #B13939;
+            }
+            PrimaryPushButton:pressed{
+                color: rgba(255, 255, 255, 0.63);
+                background-color: #DB5359;
+                border: 1px solid #DB5359;
+            }
+        """)
+        w.cancelButton.hide()
+        w.exec_()
 
     def setup_help_interface(self):
         open_by_browser = self.findChild(PushButton, 'open_by_browser')
@@ -660,6 +1048,423 @@ class SettingsMenu(FluentWindow):
         spin_prepare_time = self.findChild(SpinBox, 'spin_prepare_class')
         spin_prepare_time.setValue(int(config_center.read_conf('Toast', 'prepare_minutes')))
         spin_prepare_time.valueChanged.connect(self.save_prepare_time)  # 准备时间
+
+        # TTS
+        tts_settings = self.findChild(PushButton, 'TTS_PushButton')
+        tts_settings.clicked.connect(self.open_tts_settings)
+        self.available_voices = None
+        self.current_loaded_engine = config_center.read_conf('TTS', 'engine') # 加载的TTS引擎
+
+        self.voice_selector = None
+        self.switch_enable_TTS = None
+
+    def available_voices_cnt(self, voices):
+        self.available_voices = voices
+        if hasattr(self, 'voice_selector') and self.voice_selector and hasattr(self, 'update_tts_voices') and self.TTSSettingsDialog and not self.TTSSettingsDialog.isHidden():
+            self.update_tts_voices(self.available_voices)
+        self.switch_enable_TTS.setEnabled(True if voices else False)
+        self.voice_selector.setEnabled(True if voices else False)
+
+    class TTSSettings(MessageBoxBase): # TTS设置页
+        def __init__(self, parent=None):
+            super().__init__(parent)
+            self.parent_menu = parent # 保存父菜单的引用
+            self.temp_widget = QWidget()
+            ui_path = f'{base_directory}/view/menu/tts_settings.ui'
+            uic.loadUi(ui_path, self.temp_widget)
+            self.viewLayout.addWidget(self.temp_widget)
+
+            self.viewLayout.setContentsMargins(0, 0, 0, 0)
+            self.cancelButton.hide()
+            self.widget.setMinimumWidth(parent.width()//3*2)
+            self.widget.setMinimumHeight(parent.height())
+            switch_enable_TTS = self.widget.findChild(SwitchButton, 'switch_enable_tts')
+            slider_speed_tts = self.widget.findChild(Slider, 'slider_tts_speed')
+            tts_enabled = int(config_center.read_conf('TTS', 'enable'))
+            switch_enable_TTS.setChecked(tts_enabled)
+            slider_speed_tts.setValue(int(config_center.read_conf('TTS', 'speed')))
+
+            switch_enable_TTS.checkedChanged.connect(parent.toggle_tts_settings)
+            slider_speed_tts.valueChanged.connect(parent.save_tts_speed)
+
+            voice_selector = self.widget.findChild(ComboBox, 'voice_selector')
+            voice_selector.clear()
+            voice_selector.addItem("加载中...", userData=None)
+            voice_selector.setEnabled(False)
+            switch_enable_TTS.setEnabled(False)
+
+            # TTS引擎选择器
+            parent.engine_selector = self.widget.findChild(ComboBox, 'engine_selector')
+            if not parent.engine_selector:
+                parent.engine_selector = ComboBox(self.widget)
+            parent.populate_tts_engines()
+            parent.engine_selector.currentTextChanged.connect(parent.on_engine_selected)
+            parent.engine_note_label = self.widget.findChild(HyperlinkLabel, 'engine_note')
+            parent.engine_note_label.clicked.connect(parent.show_engine_note)
+
+            parent.voice_selector = self.widget.findChild(ComboBox, 'voice_selector')
+            parent.switch_enable_TTS = self.widget.findChild(SwitchButton, 'switch_enable_tts')
+            self.tts_vocab_button = self.widget.findChild(PushButton, 'tts_vocab_button')
+            def show_vocab_note():
+                w = MessageBox('小语法?',
+                               '可以使用以下占位符来动态插入信息：\n'\
+                               '- `{lesson_name}`: 开始&结束&下节的课程名(例如：信息技术)\n'\
+                               '- `{minutes}`: 分钟数 (例如：5) *其他\n'\
+                               '- `{title}`: 通知标题 (例如：重要通知) *其他\n'\
+                               '- `{content}`: 通知内容 (例如：这是一条测试通知) *其他\n', self)
+                w.cancelButton.hide()
+                w.exec()
+            self.tts_vocab_button.clicked.connect(show_vocab_note)
+
+            if parent.available_voices is not None and parent.current_loaded_engine == parent.engine_selector.currentData():
+                parent.update_tts_voices(parent.available_voices)
+            else:
+                # 启动由 open_tts_settings 处理
+                voice_selector.clear()
+                voice_selector.addItem("加载中...", userData=None)
+                voice_selector.setEnabled(False)
+
+            text_attend_class = self.widget.findChild(LineEdit, 'text_attend_class')
+            text_attend_class.setText(config_center.read_conf('TTS', 'attend_class'))
+            text_attend_class.textChanged.connect(lambda: config_center.write_conf('TTS', 'attend_class', text_attend_class.text()))
+
+            text_prepare_class = self.widget.findChild(LineEdit, 'text_prepare_class')
+            text_prepare_class.setText(config_center.read_conf('TTS', 'prepare_class'))
+            text_prepare_class.textChanged.connect(lambda: config_center.write_conf('TTS', 'prepare_class', text_prepare_class.text()))
+
+            text_finish_class = self.widget.findChild(LineEdit, 'text_finish_class')
+            text_finish_class.setText(config_center.read_conf('TTS', 'finish_class'))
+            text_finish_class.textChanged.connect(lambda: config_center.write_conf('TTS', 'finish_class', text_finish_class.text()))
+
+            text_after_school = self.widget.findChild(LineEdit, 'text_after_school')
+            text_after_school.setText(config_center.read_conf('TTS', 'after_school'))
+            text_after_school.textChanged.connect(lambda: config_center.write_conf('TTS', 'after_school', text_after_school.text()))
+
+            text_notification = self.widget.findChild(LineEdit, 'text_notification')
+            text_notification.setText(config_center.read_conf('TTS', 'otherwise'))
+            text_notification.textChanged.connect(lambda: config_center.write_conf('TTS', 'otherwise', text_notification.text()))
+
+            # 预览
+            preview_tts_button = self.widget.findChild(PrimaryDropDownPushButton, 'preview')
+            preview_tts_menu = RoundMenu(parent=preview_tts_button)
+            preview_tts_menu.addActions([
+                Action(fIcon.EDUCATION, '上课提醒', triggered=lambda: self.play_tts_preview('attend_class')),
+                Action(fIcon.CAFE, '下课提醒', triggered=lambda: self.play_tts_preview('finish_class')),
+                Action(fIcon.BOOK_SHELF, '预备提醒', triggered=lambda: self.play_tts_preview('prepare_class')),
+                Action(fIcon.EMBED, '放学提醒', triggered=lambda: self.play_tts_preview('after_school')),
+                Action(fIcon.CODE, '其他提醒', triggered=lambda: self.play_tts_preview('otherwise'))
+            ])
+            preview_tts_button.setMenu(preview_tts_menu)
+
+        def play_tts_preview(self, text_type):
+            text_template = config_center.read_conf('TTS', text_type)
+            from collections import defaultdict
+            format_values = defaultdict(str, {
+                'lesson_name': '信息技术',
+                'minutes': '5',
+                'title': '通知',
+                'content': '这是一条测试通知ヾ(≧▽≦*)o'
+            })
+            if text_type == 'attend_class':
+                text_to_speak = text_template.format_map(format_values)
+            elif text_type == 'finish_class':
+                text_to_speak = text_template.format_map(format_values)
+            elif text_type == 'prepare_class':
+                text_to_speak = text_template.format_map(format_values)
+            elif text_type == 'after_school':
+                text_to_speak = text_template.format_map(format_values)
+            elif text_type == 'otherwise':
+                text_to_speak = text_template.format_map(format_values)
+            else:
+                text_to_speak = text_template.format_map(format_values)
+
+            logger.debug(f"生成TTS文本: {text_to_speak}")
+            
+            try:
+                current_engine = self.parent_menu.engine_selector.currentData()
+                current_voice = None
+                if self.parent_menu.voice_selector and self.parent_menu.voice_selector.currentData():
+                    current_voice = self.parent_menu.voice_selector.currentData()
+                
+                if hasattr(self, 'tts_preview_thread') and self.tts_preview_thread and self.tts_preview_thread.isRunning():
+                    self.tts_preview_thread.requestInterruption()
+                    self.tts_preview_thread.quit()
+                    if not self.tts_preview_thread.wait(1000):
+                        logger.warning("旧TTS预览线程未能在超时时间内退出，将在后台继续运行")
+                self.tts_preview_thread = TTSPreviewThread(
+                    text=text_to_speak,
+                    engine=current_engine,
+                    voice=current_voice,
+                    parent=self
+                )
+                
+                self.tts_preview_thread.previewError.connect(self.handle_tts_preview_error)
+                self.tts_preview_thread.start()
+                
+            except Exception as e:
+                logger.error(f"启动TTS预览线程失败: {str(e)}")
+                from qfluentwidgets import MessageBox
+                MessageBox(
+                    "TTS预览失败",
+                    f"启动TTS预览时出错: {str(e)}",
+                    self
+                ).exec()
+                
+        def handle_tts_preview_error(self, error_message):
+            logger.error(f"TTS生成预览失败: {error_message}")
+            from qfluentwidgets import MessageBox
+            MessageBox(
+                "TTS生成失败",
+                f"生成或播放语音时出错: {error_message}",
+                self
+            ).exec()
+
+
+    def open_tts_settings(self):
+        if not hasattr(self, 'TTSSettingsDialog') or not self.TTSSettingsDialog:
+            self.TTSSettingsDialog = self.TTSSettings(self)
+        current_selected_engine_in_selector = self.engine_selector.currentData()
+        tts_enabled = config_center.read_conf('TTS', 'enable') == '1'
+
+        if tts_enabled:
+            self.voice_selector.clear()
+            self.voice_selector.addItem("加载中...", userData=None)
+            self.voice_selector.setEnabled(False)
+            self.switch_enable_TTS.setEnabled(True)
+        else:
+            self.voice_selector.clear()
+            self.voice_selector.addItem("未启用", userData=None)
+            self.voice_selector.setEnabled(False)
+            self.switch_enable_TTS.setEnabled(True)
+
+        self.toggle_tts_settings(tts_enabled)
+        self.TTSSettingsDialog.show()
+        self.TTSSettingsDialog.exec()
+        logger.debug(f"加载引擎: {self.current_loaded_engine},{current_selected_engine_in_selector}(选择器)")
+        if tts_enabled:
+            self.load_tts_voices_for_engine(current_selected_engine_in_selector)
+        else:
+            self.voice_selector.clear()
+            self.voice_selector.addItem("未启用", userData=None)
+            self.voice_selector.setEnabled(False)
+            self.switch_enable_TTS.setEnabled(True)
+
+    def on_engine_selected(self, engine_text):
+        selected_engine_key = self.engine_selector.currentData()
+        if selected_engine_key and selected_engine_key != self.current_loaded_engine:
+            logger.debug(f"TTS引擎被更改,尝试更新列表: {selected_engine_key}")
+            config_center.write_conf('TTS', 'engine', selected_engine_key)
+            self.current_loaded_engine = selected_engine_key # 更新当前加载的引擎
+            self.load_tts_voices_for_engine(selected_engine_key)
+        elif not selected_engine_key:
+            logger.warning("选择的TTS引擎键为空")
+
+    def load_tts_voices_for_engine(self, engine_key):
+        if config_center.read_conf('TTS', 'enable') == '0':
+            self.voice_selector.clear()
+            self.voice_selector.addItem("未启用", userData=None)
+            self.voice_selector.setEnabled(False)
+            self.switch_enable_TTS.setEnabled(True)
+            return
+        self.voice_selector.clear()
+        self.voice_selector.addItem("加载中...", userData=None)
+        self.voice_selector.setEnabled(False)
+        if hasattr(self, 'TTSSettingsDialog') and self.TTSSettingsDialog.isVisible():
+            self.switch_enable_TTS.setEnabled(False) # 临时禁用TTS开关
+
+        if self.tts_voice_loader_thread and self.tts_voice_loader_thread.isRunning():
+            self.tts_voice_loader_thread.requestInterruption()
+            self.tts_voice_loader_thread.quit()
+            if not self.tts_voice_loader_thread.wait(2000):
+                logger.warning("旧TTS加载线程未能在超时时间内退出，将在后台继续运行")
+        self.tts_voice_loader_thread = None
+
+        self.current_loaded_engine = engine_key
+        self.available_voices = None
+        self.tts_voice_loader_thread = TTSVoiceLoaderThread(engine_filter=engine_key)
+        self.tts_voice_loader_thread.voicesLoaded.connect(lambda voices: self.available_voices_cnt(voices) or self.switch_enable_TTS.setEnabled(True))
+        self.tts_voice_loader_thread.errorOccurred.connect(lambda error: self.handle_tts_load_error(error) or self.switch_enable_TTS.setEnabled(True))
+        self.tts_voice_loader_thread.start()
+
+    def populate_tts_engines(self):
+        # 填充TTS引擎选项
+        self.engine_selector.clear()
+        available_engines = generate_speech.get_available_engines() #  假设 generate_speech 有这个方法
+        logger.debug(f"可用TTS引擎: {available_engines}")
+        for engine_key, engine_name in available_engines.items():
+            if engine_key == 'pyttsx3' and platform.system() != "Windows":
+                continue
+            self.engine_selector.addItem(engine_name, userData=engine_key)
+        
+        current_engine = config_center.read_conf('TTS', 'engine')
+        if current_engine in available_engines:
+            if current_engine == 'pyttsx3' and platform.system() != "Windows":
+                if self.engine_selector.count() > 0:
+                    self.engine_selector.setCurrentIndex(0)
+                    config_center.write_conf('TTS', 'engine', self.engine_selector.currentData())
+                    logger.warning(f"当前系统不支持pyttsx3，已自动切换到引擎: {self.engine_selector.currentData()}")
+                else:
+                    logger.error("没有可用的TTS引擎!")
+            else:
+                index = self.engine_selector.findData(current_engine)
+                if index != -1:
+                    self.engine_selector.setCurrentIndex(index)
+        elif self.engine_selector.count() > 0:
+            self.engine_selector.setCurrentIndex(0)
+            config_center.write_conf('TTS', 'engine', self.engine_selector.currentData())
+
+    def show_engine_note(self):
+        if not hasattr(self, 'engine_selector') or not self.engine_selector:
+            logger.warning("引擎选择器未初始化")
+            return
+
+        current_engine_key = self.engine_selector.currentData()
+        title = "引擎小提示"
+        message = ""
+        if current_engine_key == "edge":
+            message = ("Edge TTS 需要联网才能正常发声哦~\n"
+                       "请确保网络连接,不然会说不出话来(>﹏<)\n"
+                       "* 可能会有一定的延迟,耐心等待一下~")
+            w = MessageBox(title, message, self.TTSSettingsDialog if hasattr(self, 'TTSSettingsDialog') and self.TTSSettingsDialog else self.parent_menu)
+            w.yesButton.setText('知道啦~')
+            w.cancelButton.hide()
+            w.show()
+        elif current_engine_key == "pyttsx3" and platform.system() == "Windows":
+            class CustomMessageBox(MessageBoxBase):
+                def __init__(self, parent=None):
+                    super().__init__(parent)
+                    self.titleLabel = StrongBodyLabel(title, self)
+                    self.contentLabel = BodyLabel(
+                        "系统 TTS（pyttsx3）用的是系统自带的语音服务噢~\n"
+                        "您可以在系统设置里添加更多语音(*≧▽≦)", 
+                        self)
+                    self.hyperlinkLabel = HyperlinkLabel("打开Windows语音设置", self)
+                    self.hyperlinkLabel.clicked.connect(self._open_settings)
+                    self.viewLayout.addWidget(self.titleLabel)
+                    self.viewLayout.addWidget(self.contentLabel)
+                    self.viewLayout.addWidget(self.hyperlinkLabel)
+                    self.yesButton.setText('知道啦~')
+                    self.cancelButton.hide()
+                def _open_settings(self):
+                    QDesktopServices.openUrl(QUrl("file:///C:/Windows/System32/Speech/SpeechUX/sapi.cpl"))
+            w = CustomMessageBox(self.TTSSettingsDialog if hasattr(self, 'TTSSettingsDialog') and self.TTSSettingsDialog else self.parent_menu)
+            w.exec()
+        else:
+            message = "这个语音引擎还没有提示信息呢~(・ω<)"
+            w = MessageBox(title, message, self.TTSSettingsDialog if hasattr(self, 'TTSSettingsDialog') and self.TTSSettingsDialog else self.parent_menu)
+            w.yesButton.setText('知道啦~')
+            w.cancelButton.hide()
+            w.show()
+
+
+    def toggle_tts_settings(self, checked):
+        switch_checked('TTS', 'enable', checked)
+
+        tts_dialog_widget = self.TTSSettingsDialog.widget if hasattr(self, 'TTSSettingsDialog') and self.TTSSettingsDialog else None
+        if not tts_dialog_widget:
+            return
+        card_tts_speed = tts_dialog_widget.findChild(CardWidget, 'CardWidget_7')
+        card_tts_speed.setVisible(checked)
+        if checked:
+            self.engine_selector.setEnabled(True)
+            if self.voice_selector.itemText(0) in ["未启用", "加载失败", "无可用语音"] or self.voice_selector.count() == 0:
+                self.voice_selector.clear()
+                self.voice_selector.addItem("加载中...", userData=None)
+            self.voice_selector.setEnabled(False)
+            self.switch_enable_TTS.setEnabled(False)
+            current_engine = self.engine_selector.currentData()
+            if current_engine:
+                self.load_tts_voices_for_engine(current_engine)
+            else:
+                logger.warning("TTS启用但未选择引擎，无法加载语音")
+                self.voice_selector.clear()
+                self.voice_selector.addItem("请选择引擎", userData=None)
+                self.voice_selector.setEnabled(False)
+                self.switch_enable_TTS.setEnabled(True)
+        else:
+            self.engine_selector.setEnabled(False)
+            self.voice_selector.clear()
+            self.voice_selector.addItem("未启用", userData=None)
+            self.voice_selector.setEnabled(False)
+            self.switch_enable_TTS.setEnabled(True)
+            if self.tts_voice_loader_thread and self.tts_voice_loader_thread.isRunning():
+                self.tts_voice_loader_thread.requestInterruption()
+                self.tts_voice_loader_thread.quit()
+                if not self.tts_voice_loader_thread.wait(1000):
+                    logger.warning("TTS语音加载线程未能及时停止")
+
+    def save_tts_speed(self, value):
+        config_center.write_conf('TTS', 'speed', str(value))
+
+    def update_tts_voices(self, available_voices):
+        voice_selector = self.voice_selector
+        switch_enable_TTS = self.switch_enable_TTS
+        try:
+            if voice_selector.currentTextChanged.disconnect():
+                pass
+        except TypeError:
+            pass
+        except Exception as e:
+            logger.warning(f"断开voice_selector信号连接失败: {e}")
+        voice_selector.clear()
+
+        if not available_voices:
+            logger.warning("未找到可用的TTS语音引擎或语音包")
+            if voice_selector.count() == 0 or voice_selector.itemText(0) == "加载中...":
+                voice_selector.clear()
+                voice_selector.addItem("无可用语音", userData=None)
+                voice_selector.setEnabled(False)
+            switch_enable_TTS.setEnabled(True)
+            card_tts_speed = self.findChild(CardWidget, 'CardWidget_7')
+            if card_tts_speed: card_tts_speed.setVisible(False)
+
+        for voice in available_voices:
+            voice_selector.addItem(voice['name'], userData=voice['id'])
+        current_voice_id = config_center.read_conf('TTS', 'voice_id')
+        current_voice_name = get_voice_name_by_id(current_voice_id, available_voices)
+        if current_voice_name:
+            index_to_select = -1
+            for i in range(voice_selector.count()):
+                if voice_selector.itemData(i) == current_voice_id:
+                    index_to_select = i
+                    break
+            if index_to_select != -1:
+                voice_selector.setCurrentIndex(index_to_select)
+                config_center.write_conf('TTS', 'voice_id', current_voice_id)
+            else:
+                if available_voices:
+                    voice_selector.setCurrentIndex(0)
+                    first_voice_id = available_voices[0]['id']
+                    config_center.write_conf('TTS', 'voice_id', first_voice_id)
+                else:
+                    voice_selector.setEnabled(False)
+                    switch_enable_TTS.setEnabled(False)
+        elif available_voices: # 默认选择
+            voice_selector.setCurrentIndex(0)
+            first_voice_id = available_voices[0]['id']
+            config_center.write_conf('TTS', 'voice_id', first_voice_id)
+        else: # 理论不会到这里
+             voice_selector.setEnabled(False)
+             switch_enable_TTS.setEnabled(False)
+
+        voice_selector.setEnabled(True)
+        switch_enable_TTS.setEnabled(True)
+        voice_selector.currentTextChanged.connect(lambda name: config_center.write_conf('TTS', 'voice_id', voice_selector.currentData()) if voice_selector.currentData() else None)
+
+    def handle_tts_load_error(self, error_message):
+        if not self.voice_selector or not self.switch_enable_TTS:
+            logger.warning("voice_selector 或 switch_enable_TTS 未初始化")
+            return
+            
+        voice_selector = self.voice_selector
+        switch_enable_TTS = self.switch_enable_TTS
+        voice_selector.clear()
+        voice_selector.addItem("加载失败", userData=None)
+        voice_selector.setEnabled(False)
+        logger.error(f"处理TTS语音加载错误: {error_message}")
+        if self.TTSSettingsDialog and not self.TTSSettingsDialog.isHidden():
+            parent_widget = self.TTSSettingsDialog if isinstance(self.TTSSettingsDialog, QWidget) else self
+            MessageBox("TTS语音加载失败", f"加载TTS语音时发生错误:\n{error_message}", parent_widget)
 
     class cfFileItem(QWidget, uic.loadUiType(f'{base_directory}/view/menu/file_item.ui')[0]):
         def __init__(self, file_name='', file_path='local', id=None, parent=None):
@@ -799,19 +1604,6 @@ class SettingsMenu(FluentWindow):
         save_config_button = self.findChild(PrimaryPushButton, 'save_config')
         save_config_button.clicked.connect(self.ct_save_widget_config)
 
-        # set_wcc_title = self.findChild(LineEdit, 'set_wcc_title')  # 倒计时标题
-        # set_wcc_title.setText(config_center.read_conf('Date', 'cd_text_custom'))
-        # set_wcc_title.textChanged.connect(
-        #     lambda: config_center.write_conf('Date', 'cd_text_custom', set_wcc_title.text()))
-
-        # set_countdown_date = self.findChild(CalendarPicker, 'set_countdown_date')  # 倒计时日期
-        # if config_center.read_conf('Date', 'countdown_date') != '':
-        #     set_countdown_date.setDate(QDate.fromString(config_center.read_conf('Date', 'countdown_date'), 'yyyy-M-d'))
-        # set_countdown_date.dateChanged.connect(
-        #     lambda: config_center.write_conf(
-        #         'Date', 'countdown_date', set_countdown_date.date.toString('yyyy-M-d'))
-        # )
-
         set_ac_color = self.findChild(PushButton, 'set_ac_color')  # 主题色
         set_ac_color.clicked.connect(self.ct_set_ac_color)
         set_fc_color = self.findChild(PushButton, 'set_fc_color')
@@ -863,14 +1655,19 @@ class SettingsMenu(FluentWindow):
             lambda checked: config_center.write_conf('General', 'blur_floating_countdown', int(checked))
         )
 
+        switch_enable_display_full_next_lessons = self.findChild(SwitchButton, 'switch_enable_display_full_next_lessons')
+        switch_enable_display_full_next_lessons.setChecked(int(config_center.read_conf('General', 'enable_display_full_next_lessons')))
+        switch_enable_display_full_next_lessons.checkedChanged.connect(
+            lambda checked: switch_checked('General', 'enable_display_full_next_lessons', checked))
+
         select_weather_api = self.findChild(ComboBox, 'select_weather_api')  # 天气API选择
-        select_weather_api.addItems(weather_db.api_config['weather_api_list_zhCN'])
-        select_weather_api.setCurrentIndex(weather_db.api_config['weather_api_list'].index(
+        select_weather_api.addItems(weather.weather_manager.api_config['weather_api_list_zhCN'])
+        select_weather_api.setCurrentIndex(weather.weather_manager.api_config['weather_api_list'].index(
             config_center.read_conf('Weather', 'api')
         ))
         select_weather_api.currentIndexChanged.connect(
             lambda: config_center.write_conf('Weather', 'api',
-                                             weather_db.api_config['weather_api_list'][
+                                             weather.weather_manager.api_config['weather_api_list'][
                                                  select_weather_api.currentIndex()])
         )
 
@@ -889,16 +1686,16 @@ class SettingsMenu(FluentWindow):
         check_update_btn.clicked.connect(self.check_update)
 
         self.auto_check_update = self.ifInterface.findChild(SwitchButton, 'auto_check_update')
-        self.auto_check_update.setChecked(int(config_center.read_conf("Other", "auto_check_update")))
+        self.auto_check_update.setChecked(int(config_center.read_conf("Version", "auto_check_update")))
         self.auto_check_update.checkedChanged.connect(
-            lambda checked: switch_checked("Other", "auto_check_update", checked)
+            lambda checked: switch_checked("Version", "auto_check_update", checked)
         )  # 自动检查更新
 
         self.version_channel = self.findChild(ComboBox, 'version_channel')
         self.version_channel.addItems(list_.version_channel)
-        self.version_channel.setCurrentIndex(int(config_center.read_conf("Other", "version_channel")))
+        self.version_channel.setCurrentIndex(int(config_center.read_conf("Version", "version_channel")))
         self.version_channel.currentIndexChanged.connect(
-            lambda: config_center.write_conf("Other", "version_channel", self.version_channel.currentIndex())
+            lambda: config_center.write_conf("Version", "version_channel", self.version_channel.currentIndex())
         )  # 版本更新通道
 
         github_page = self.findChild(PushButton, "button_github")
@@ -927,6 +1724,21 @@ class SettingsMenu(FluentWindow):
         margin_spin.valueChanged.connect(
             lambda: config_center.write_conf('General', 'margin', str(margin_spin.value()))
         )  # 保存边距设定
+
+        self.conf_combo = self.adInterface.findChild(ComboBox, 'conf_combo')
+        self.conf_combo.clear()
+        self.conf_combo.addItems(list_.get_schedule_config())
+        current_schedule = config_center.read_conf('General', 'schedule')
+        schedule_list = list_.get_schedule_config()
+        if current_schedule in schedule_list:
+            self.conf_combo.setCurrentIndex(schedule_list.index(current_schedule))
+        else:
+            self.conf_combo.setCurrentIndex(0) 
+        self.conf_combo.currentIndexChanged.connect(self.ad_change_file)  # 切换配置文件
+
+        conf_name = self.adInterface.findChild(LineEdit, 'conf_name')
+        conf_name.setText(config_center.schedule_name[:-5])
+        conf_name.textEdited.connect(self.ad_change_file_name)
 
         window_status_combo = self.adInterface.findChild(ComboBox, 'window_status_combo')
         window_status_combo.addItems(list_.window_status)
@@ -1109,6 +1921,13 @@ class SettingsMenu(FluentWindow):
         te_name_edit = self.findChild(EditableComboBox, 'name_part_combo')  # 名称
         te_name_edit.addItems(list_.time)
 
+        te_edit_part_button = self.findChild(ToolButton, 'edit_part_button')  # 编辑节点开始时间
+        te_edit_part_button.setIcon(fIcon.EDIT)
+        te_edit_part_button.setToolTip('编辑节点开始时间')
+        te_edit_part_button.installEventFilter(
+            ToolTipFilter(te_edit_part_button, showDelay=300, position=ToolTipPosition.TOP))
+        te_edit_part_button.clicked.connect(self.te_edit_part_time)
+
         te_delete_part_button = self.findChild(ToolButton, 'delete_part_button')  # 删除节点
         te_delete_part_button.setIcon(fIcon.DELETE)
         te_delete_part_button.setToolTip('删除节点')
@@ -1157,7 +1976,54 @@ class SettingsMenu(FluentWindow):
         QScroller.grabGesture(te_timeline_list.viewport(), QScroller.LeftMouseButtonGesture)  # 触摸屏适配
         QScroller.grabGesture(part_list.viewport(), QScroller.LeftMouseButtonGesture)  # 触摸屏适配
         self.te_detect_item()
-        self.te_update_parts_name()  # 修复在启动时无法添加时段到下拉框的问题
+        self.te_update_parts_name()
+
+    def te_edit_part_time(self):
+        """编辑选中节点的开始时间"""
+        te_part_list = self.findChild(ListWidget, 'part_list')
+        te_part_time = self.findChild(TimeEdit, 'part_time')
+        selected_items = te_part_list.selectedItems()
+        if not selected_items:
+            Flyout.create(
+                icon=InfoBarIcon.WARNING,
+                title='请先选择一个节点 o(TヘTo)',
+                content='在编辑节点时间前，请先在左侧列表中选择要编辑的节点',
+                target=self.findChild(ToolButton, 'edit_part_button'),
+                parent=self,
+                isClosable=True,
+                aniType=FlyoutAnimationType.PULL_UP
+            )
+            return
+        selected_item = selected_items[0]
+        item_text = selected_item.text()
+        item_info = item_text.split(' - ')
+        if len(item_info) >= 3:
+            part_name = item_info[0]
+            part_type = item_info[2]
+            new_time = te_part_time.time().toString("h:mm")
+            new_text = f'{part_name} - {new_time} - {part_type}'
+            selected_item.setText(new_text)
+            self.te_detect_item()
+            self.te_update_parts_name()
+            Flyout.create(
+                icon=InfoBarIcon.SUCCESS,
+                title='节点时间已更新 ヾ(≧▽≦*)o',
+                content=f'节点 "{part_name}" 的开始时间已更新为 {new_time}',
+                target=self.findChild(ToolButton, 'edit_part_button'),
+                parent=self,
+                isClosable=True,
+                aniType=FlyoutAnimationType.PULL_UP
+            )
+        else:
+            Flyout.create(
+                icon=InfoBarIcon.ERROR,
+                title='节点格式异常 (╥﹏╥)',
+                content='选中的节点格式不正确，无法编辑',
+                target=self.findChild(ToolButton, 'edit_part_button'),
+                parent=self,
+                isClosable=True,
+                aniType=FlyoutAnimationType.PULL_UP
+            )
 
     def setup_schedule_preview(self):
         subtitle = self.findChild(SubtitleLabel, 'subtitle_file')
@@ -1325,14 +2191,16 @@ class SettingsMenu(FluentWindow):
                     return 0
 
     def check_update(self):
-        self.version.setText(f'当前版本：{config_center.read_conf("Other", "version")}\n正在检查最新版本…')
         self.version_thread = VersionThread()
         self.version_thread.version_signal.connect(self.check_version)
         self.version_thread.start()
 
     def check_version(self, version):  # 检查更新
         if 'error' in version:
-            self.version.setText(f'当前版本：{config_center.read_conf("Other", "version")}\n{version["error"]}')
+            self.version_number_label.setText(f'版本号：获取失败！')
+            self.build_commit_label.setText(f'获取失败！')
+            self.build_uuid_label.setText(f'获取失败！')
+            self.build_date_label.setText(f'获取失败！')
 
             if utils.tray_icon:
                 utils.tray_icon.push_error_notification(
@@ -1341,15 +2209,26 @@ class SettingsMenu(FluentWindow):
                 )
             return False
 
-        channel = int(config_center.read_conf("Other", "version_channel"))
+        channel = int(config_center.read_conf("Version", "version_channel"))
         new_version = version['version_release' if channel == 0 else 'version_beta']
-        local_version = config_center.read_conf("Other", "version")
+        local_version = config_center.read_conf("Version", "version") or "0.0.0"
+        build_commit = config_center.read_conf("Version", "build_commit")
+        build_branch = config_center.read_conf("Version", "build_branch")
+        build_runid = config_center.read_conf("Version", "build_runid")
+        build_type = config_center.read_conf("Version", "build_type")
+        build_time = config_center.read_conf("Version", "build_time")
 
         logger.debug(f"服务端版本: {Version(new_version)}，本地版本: {Version(local_version)}")
         if Version(new_version) <= Version(local_version):
-            self.version.setText(f'当前版本：{local_version}\n当前为最新版本')
+            self.version_number_label.setText(f'版本号：{local_version}\n已是最新版本！')
+            self.build_commit_label.setText(f'{build_commit if build_commit != "__BUILD_COMMIT__" else "Debug"}({build_branch if build_branch != "__BUILD_BRANCH__" else "Debug"})')
+            self.build_uuid_label.setText(f'{build_runid if build_runid != "__BUILD_RUNID__" else "Debug"} - {build_type if build_type != "__BUILD_TYPE__" else "Debug"}')
+            self.build_date_label.setText(f'{build_time if build_time != "__BUILD_TIME__" else "Debug"}')
         else:
-            self.version.setText(f'当前版本：{local_version}\n最新版本：{new_version}')
+            self.version_number_label.setText(f'版本号：{local_version}\n可更新版本: {new_version}')
+            self.build_commit_label.setText(f'{build_commit if build_commit != "__BUILD_COMMIT__" else "Debug"}({build_branch if build_branch != "__BUILD_BRANCH__" else "Debug"})')
+            self.build_uuid_label.setText(f'{build_runid if build_runid != "__BUILD_RUNID__" else "Debug"} - {build_type if build_type != "__BUILD_TYPE__" else "Debug"}')
+            self.build_date_label.setText(f'{build_time if build_time != "__BUILD_TIME__" else "Debug"}')
 
             if utils.tray_icon:
                 utils.tray_icon.push_update_notification(f"新版本速递：{new_version}")
@@ -1569,6 +2448,7 @@ class SettingsMenu(FluentWindow):
             if self.cf_file_list[self.table.currentIndex().row()].file_name.text():
                 new_name = self.cf_file_list[self.table.currentIndex().row()].file_name.text()
                 config_center.write_conf('General', 'schedule', new_name)
+                update_tray_tooltip()
 
             else:
                 logger.error(f'切换课程文件时列表选择异常：{self.cf_file_list[self.table.currentIndex().row()].file_name.text()}')
@@ -1680,25 +2560,82 @@ class SettingsMenu(FluentWindow):
             w.cancelButton.hide()
             w.exec()
 
+    def check_and_disable_schedule_edit(self):
+        """检查是否存在调休状态，如果存在则禁用课程表编辑功能"""
+        adjusted_classes = schedule_center.schedule_data.get('adjusted_classes', {})
+        is_adjusted = bool(adjusted_classes)
+
+        if is_adjusted:
+            se_set_button = self.findChild(ToolButton, 'set_button')
+            se_clear_button = self.findChild(ToolButton, 'clear_button')
+            se_class_kind_combo = self.findChild(ComboBox, 'class_combo')
+            se_custom_class_text = self.findChild(LineEdit, 'custom_class')
+            se_save_button = self.findChild(PrimaryPushButton, 'save_schedule')
+            se_copy_schedule_button = self.findChild(PushButton, 'copy_schedule')
+            quick_set_schedule = self.findChild(ListWidget, 'subject_list')
+            quick_select_week_button = self.findChild(PushButton, 'quick_select_week')
+            se_set_button.setEnabled(False)
+            se_clear_button.setEnabled(False)
+            se_class_kind_combo.setEnabled(False)
+            se_custom_class_text.setEnabled(False)
+            se_save_button.setEnabled(False)
+            se_copy_schedule_button.setEnabled(False)
+            quick_set_schedule.setEnabled(False)
+            quick_select_week_button.setEnabled(False)
+
+    def check_and_disable_timeline_edit(self):
+        """检查是否存在调休状态，如果存在则禁用时间线编辑功能"""
+        adjusted_classes = schedule_center.schedule_data.get('adjusted_classes', {})
+        is_adjusted = bool(adjusted_classes)
+        if is_adjusted:
+            te_add_button = self.findChild(ToolButton, 'add_button')
+            te_add_part_button = self.findChild(ToolButton, 'add_part_button')
+            te_delete_part_button = self.findChild(ToolButton, 'delete_part_button')
+            te_edit_button = self.findChild(ToolButton, 'edit_button')
+            te_delete_button = self.findChild(ToolButton, 'delete_button')
+            te_save_button = self.findChild(PrimaryPushButton, 'save')
+            te_add_button.setEnabled(False)
+            te_add_part_button.setEnabled(False)
+            te_delete_part_button.setEnabled(False)
+            te_edit_button.setEnabled(False)
+            te_delete_button.setEnabled(False)
+            te_save_button.setEnabled(False)
+
     def sp_fill_grid_row(self):  # 填充预览表格
         subtitle = self.findChild(SubtitleLabel, 'subtitle_file')
-        subtitle.setText(f'预览  -  {config_center.schedule_name[:-5]}')
+        adjusted_classes = schedule_center.schedule_data.get('adjusted_classes', {})
+
         sp_week_type_combo = self.findChild(ComboBox, 'pre_week_type_combo')
-        schedule_view = self.findChild(TableWidget, 'schedule_view')
-        schedule_view.setRowCount(sp_get_class_num())
         if sp_week_type_combo.currentIndex() == 1:
             schedule_dict_sp = schedule_even_dict
+            week_type = 'even'
         else:
             schedule_dict_sp = schedule_dict
+            week_type = 'odd'
+        is_adjusted = any(adjusted_classes.get(f'{week_type}_{i}', False) for i in range(len(schedule_dict_sp)))
+        schedule_name = config_center.schedule_name[:-5]
+        if is_adjusted:
+            subtitle.setText(f'预览  -  [调休] {schedule_name}')
+        else:
+            subtitle.setText(f'预览  -  {schedule_name}')
+        schedule_view = self.findChild(TableWidget, 'schedule_view')
+        schedule_view.setRowCount(sp_get_class_num())
+
         for i in range(len(schedule_dict_sp)):  # 周数
             for j in range(len(schedule_dict_sp[str(i)])):  # 一天内全部课程
                 item_text = schedule_dict_sp[str(i)][j].split('-')[0]
                 if item_text != '未添加':
-                    item = QTableWidgetItem(item_text)
+                    if adjusted_classes.get(f'{week_type}_{i}', False):
+                        item = QTableWidgetItem(f'{item_text}')
+                        color = themeColor()
+                        color.setAlpha(64)
+                        item.setBackground(color)
+                    else:
+                        item = QTableWidgetItem(item_text)
                 else:
                     item = QTableWidgetItem('')
                 schedule_view.setItem(j, i, item)
-                item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)  # 设置单元格文本居中对齐
+                item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
 
     # 加载时间线
     def te_load_item(self):
@@ -2191,7 +3128,7 @@ class SettingsMenu(FluentWindow):
         if selected_items:
             selected_item = selected_items[0]
             selected_item.setText(
-                f"{cd_set_countdown_date.text().replace('/', '-')} - {cd_text_cd.text()}"
+                f"{cd_set_countdown_date.date.toString('yyyy-M-d')} - {cd_text_cd.text()}"
             )
 
     def cd_delete_item(self):
@@ -2206,7 +3143,7 @@ class SettingsMenu(FluentWindow):
         cd_text_cd = self.findChild(LineEdit, 'text_cd')
         cd_set_countdown_date = self.findChild(CalendarPicker, 'set_countdown_date')
         cd_countdown_list.addItem(
-            f'{cd_set_countdown_date.text().replace("/", "-")} - {cd_text_cd.text()}'
+            f"{cd_set_countdown_date.date.toString('yyyy-M-d')} - {cd_text_cd.text()}"
         )
 
     def cd_save_item(self):
@@ -2305,6 +3242,8 @@ class SettingsMenu(FluentWindow):
     def init_window(self):
         self.stackedWidget.setCurrentIndex(0)  # 设置初始页面
         self.load_all_item()
+        self.check_and_disable_schedule_edit()
+        self.check_and_disable_timeline_edit()
         self.setMinimumWidth(700)
         self.setMinimumHeight(400)
         self.navigationInterface.setExpandWidth(250)
