@@ -1495,16 +1495,7 @@ class SettingsMenu(FluentWindow):
 
             self.id = id
 
-    # patch: qfw 的 ListWidget 开多列除第一列外没有选中条
-    class cfCustomDelegate(ListItemDelegate):
-        def _drawIndicator(self, painter: QPainter, option, index):
-            # 计算绘制位置
-            x, y, h = option.rect.x(), option.rect.y(), option.rect.height()
-            ph = round(0.35*h if self.pressedRow == index.row() else 0.257*h)
-            painter.setBrush(themeColor())
-            painter.drawRoundedRect(x, ph + y, 3, h - 2*ph, 1.5, 1.5)
     # end of patch
-
     def cf_add_item(self, file_name, file_path, id):
         item_widget = self.cfFileItem(file_name, file_path, id, self)
         it = QListWidgetItem()
@@ -1512,6 +1503,7 @@ class SettingsMenu(FluentWindow):
         it.setSizeHint(QSize(self.table.min_item_width, self.table.item_height))
         self.table.addItem(it)
         self.table.setItemWidget(it, item_widget)
+        item_widget.setFixedWidth(self.table.gridSize().width())
         return item_widget
     
     def setup_configs_interface(self):  # 配置界面
@@ -1540,31 +1532,42 @@ class SettingsMenu(FluentWindow):
         old.deleteLater()
 
         class UniformListWidget(ListWidget):
-            def __init__(self, min_item_width=300, item_height=60, *args, **kwargs):
+            # patch: qfw 的 ListWidget 开多列除第一列外没有选中条
+            class cfCustomDelegate(ListItemDelegate):
+                def _drawIndicator(self, painter: QPainter, option, index):
+                    # 计算绘制位置
+                    x, y, h = option.rect.x(), option.rect.y(), option.rect.height()
+                    ph = round(0.35*h if self.pressedRow == index.row() else 0.257*h)
+                    painter.setBrush(themeColor())
+                    painter.drawRoundedRect(x, ph + y, 3, h - 2*ph, 1.5, 1.5)
+            # end of patch
+
+            def __init__(self, *args, min_item_width=200, max_item_width=300, item_height=60, **kwargs):
                 super().__init__(*args, **kwargs)
                 self.min_item_width = min_item_width
+                self.max_item_width = max_item_width
                 self.item_height = item_height
-                self.setFlow(self.LeftToRight)
+                self.setResizeMode(ListWidget.Adjust)
+                self.setFlow(ListWidget.LeftToRight)
                 self.setWrapping(True)
-                self.setMovement(self.Static)
-                self.setSpacing(4)
-                self.setContentsMargins(4,4,4,4)
+                self.setSpacing(8)
+                self.setGridSize(QSize(self.min_item_width, self.item_height))
+                self.setItemDelegate(self.cfCustomDelegate(self))  # 使用自定义的 Delegate
 
-            def resizeEvent(self, e):
-                super().resizeEvent(e)
-                self._adjust_grid()
-
-            def _adjust_grid(self):
-                w = self.width()
-                m = self.contentsMargins()
-                w -= m.left()+m.right()
-                vsb = self.verticalScrollBar()
-                if vsb.isVisible(): w -= vsb.width()
-                sp = self.spacing()
-                cols = max(1, w // (self.min_item_width + sp))
-                cell_w = (w - sp*(cols-1)) // cols
-                self.setGridSize(QSize(cell_w, self.item_height))
-                self.doItemsLayout()
+            def resizeEvent(self, event):
+                spacing = self.spacing()
+                n = max(1, self.width() // (self.min_item_width + spacing))
+                item_width = (self.width() - (n + 1) * spacing) // n
+                # 限制最大宽度
+                item_width = min(max(item_width, self.min_item_width), self.max_item_width)
+                self.setGridSize(QSize(item_width, self.item_height))
+                for i in range(self.count()):
+                    item = self.item(i)
+                    widget = self.itemWidget(item)
+                    if widget:
+                        widget.setFixedWidth(item_width)
+                    item.setSizeHint(QSize(item_width, self.item_height))
+                super().resizeEvent(event)
 
         # 新建并插入
         self.table = UniformListWidget(parent=self.cfInterface)
@@ -2413,7 +2416,6 @@ class SettingsMenu(FluentWindow):
             self.table.setFlow(ListWidget.LeftToRight)  # 设置从左到右排列
             self.table.setResizeMode(ListWidget.Adjust)  # 调整大小
             self.table.setWrapping(True)  # 允许换行
-            self.table.setItemDelegate(self.cfCustomDelegate(self.table))
 
             config_list = list_.get_schedule_config()
             self.cf_file_list.clear()
