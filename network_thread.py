@@ -446,6 +446,9 @@ class scheduleThread(QThread):  # 获取课表
         else:
             data = {'error': "method not supported"}
         
+        if not isinstance(data, dict):
+            logger.error(f"获取课表失败，返回数据不是字典类型: {data}")
+            data = {'error': "获取课表失败，返回数据不是字典类型"}
         # 发射信号
         self.update_signal.emit(data)
 

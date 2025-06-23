@@ -1725,21 +1725,6 @@ class SettingsMenu(FluentWindow):
             lambda: config_center.write_conf('General', 'margin', str(margin_spin.value()))
         )  # 保存边距设定
 
-        self.conf_combo = self.adInterface.findChild(ComboBox, 'conf_combo')
-        self.conf_combo.clear()
-        self.conf_combo.addItems(list_.get_schedule_config())
-        current_schedule = config_center.read_conf('General', 'schedule')
-        schedule_list = list_.get_schedule_config()
-        if current_schedule in schedule_list:
-            self.conf_combo.setCurrentIndex(schedule_list.index(current_schedule))
-        else:
-            self.conf_combo.setCurrentIndex(0) 
-        self.conf_combo.currentIndexChanged.connect(self.ad_change_file)  # 切换配置文件
-
-        conf_name = self.adInterface.findChild(LineEdit, 'conf_name')
-        conf_name.setText(config_center.schedule_name[:-5])
-        conf_name.textEdited.connect(self.ad_change_file_name)
-
         window_status_combo = self.adInterface.findChild(ComboBox, 'window_status_combo')
         window_status_combo.addItems(list_.window_status)
         window_status_combo.setCurrentIndex(int(config_center.read_conf('General', 'pin_on_top')))
@@ -2484,12 +2469,24 @@ class SettingsMenu(FluentWindow):
             w.cancelButton.hide()
             w.exec()
             return
-        self.version_thread = scheduleThread(url)
-        self.version_thread.update_signal.connect(self.cf_receive_schedule)
-        self.version_thread.start()
+        self.update_thread = scheduleThread(url)
+        self.update_thread.update_signal.connect(self.cf_receive_schedule)
+        self.update_thread.start()
 
     def cf_receive_schedule(self, data):
-        schedule_center.save_data(data, config_center.schedule_name)
+        if not (data.get('error', None) is None):
+            w = MessageBox('获取配置文件失败', data['error'], self)
+            w.cancelButton.hide()
+            w.exec()
+            return
+        try:
+            schedule_center.save_data(data, config_center.schedule_name)
+        except ValueError as e:
+            logger.error(f'更新配置文件 {config_center.schedule_name} 时发生错误：{e}')
+            w = MessageBox('更新配置文件失败', f"{e}", self)
+            w.cancelButton.hide()
+            w.exec()
+            return
         schedule_center.update_schedule()
 
     def cf_load_schedule_from_db(self):
@@ -2501,9 +2498,9 @@ class SettingsMenu(FluentWindow):
                 w.cancelButton.hide()
                 w.exec()
                 return        
-            schedule_thread = scheduleThread(url)
-            schedule_thread.update_signal.connect(self.cf_receive_schedule_from_db)
-            schedule_thread.start()
+            self.schedule_thread = scheduleThread(url)
+            self.schedule_thread.update_signal.connect(self.cf_receive_schedule_from_db)
+            self.schedule_thread.start()
             self.config_url.setEnabled(False)
             
         except Exception as e:
@@ -2520,7 +2517,15 @@ class SettingsMenu(FluentWindow):
         self.config_url = self.cfInterface.findChild(LineEdit, 'config_url')
         url = self.config_url.text()
         data['url'] = url
-        schedule_center.save_data(data, config_center.schedule_name)
+        try:
+            schedule_center.save_data(data, config_center.schedule_name)
+        except ValueError as e:
+            logger.error(f'保存配置文件 {url} 时发生错误：{e}')
+            w = MessageBox('保存配置文件失败，自动保存为空课表', f"{e}", self)
+            w.cancelButton.hide()
+            w.exec()
+            self.config_url.setEnabled(True)
+            return
         self.config_url.setEnabled(True)
         self.config_url.clear()
 
