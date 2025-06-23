@@ -272,39 +272,7 @@ class ScheduleCenter:
         self.schedule_data['url'] = url
         self.save_data(self.schedule_data, config_center.schedule_name)
 
-    def check_data(self, data:dict):
-        """
-        检查数据是否符合预期格式
-        :param data: 要检查的数据字典
-        :return: 如果数据格式正确，返回 True；否则返回 False
-        """
-        with open(base_directory / 'config' / 'default.json', 'r', encoding='utf-8') as default_file:
-            default_data = json.load(default_file)
-        if not isinstance(data, dict):
-            logger.error("数据格式错误: 数据应为字典类型")
-            return False
-        # 递归对比 data 和 default_data 是否有相同的键
-        def compare_dicts(data_dict, default_dict):
-            for key, value in default_dict.items():
-                if key not in data_dict:
-                    logger.error(f"缺少键: {key}")
-                    return False
-                if isinstance(value, dict):
-                    if not isinstance(data_dict[key], dict):
-                        logger.error(f"键 '{key}' 的值应为字典类型")
-                        return False
-                    if not compare_dicts(data_dict[key], value):
-                        return False
-                elif not isinstance(data_dict[key], type(value)):
-                        logger.error(f"键 '{key}' 的值类型错误，应为 {type(value).__name__}")
-                        return False
-            return True
-
-        return compare_dicts(data, default_data)
-
     def save_data(self, new_data, filename):
-        if not self.check_data(new_data):
-            raise ValueError("数据格式不符合预期，请检查数据结构。")
         if 'timeline' in new_data and isinstance(new_data['timeline'], dict):
             if 'timeline' in self.schedule_data and isinstance(self.schedule_data['timeline'], dict):
                 self.schedule_data['timeline'].update(new_data['timeline'])

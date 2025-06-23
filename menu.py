@@ -1488,8 +1488,8 @@ class SettingsMenu(FluentWindow):
             self.settings.setIcon(fIcon.SETTING)
 
             menu = RoundMenu(parent=self.settings)
-            menu.addAction(Action(fIcon.SAVE, '导出', triggered=parent.cf_export_schedule))
-            menu.addAction(Action(fIcon.SAVE, '导出为 CSES', triggered=parent.cf_export_schedule_cses))
+            menu.addAction(Action(fIcon.SAVE, '导出', triggered=lambda: parent.cf_export_schedule(file_name)))
+            menu.addAction(Action(fIcon.SAVE, '导出为 CSES', triggered=lambda: parent.cf_export_schedule_cses(file_name)))
 
             self.settings.setMenu(menu)
 
@@ -2154,11 +2154,11 @@ class SettingsMenu(FluentWindow):
         w.exec()
         self.ct_update_preview()
 
-    def cf_export_schedule(self):  # 导出课程表
-        file_path, _ = QFileDialog.getSaveFileName(self, "保存文件", config_center.schedule_name,
+    def cf_export_schedule(self, file_name):  # 导出课程表
+        file_path, _ = QFileDialog.getSaveFileName(self, "保存文件", file_name,
                                                    "Json 配置文件 (*.json)")
         if file_path:
-            if list_.export_schedule(file_path, config_center.schedule_name):
+            if list_.export_schedule(file_path, file_name):
                 alert = MessageBox('您已成功导出课程表配置文件',
                                    f'文件将导出于{file_path}', self)
                 alert.cancelButton.hide()
@@ -2254,13 +2254,13 @@ class SettingsMenu(FluentWindow):
                 alert.buttonLayout.insertStretch(0, 1)
                 alert.exec()
 
-    def cf_export_schedule_cses(self):  # 导出课程表（CSES）
+    def cf_export_schedule_cses(self, file_name):  # 导出课程表（CSES）
         file_path, _ = QFileDialog.getSaveFileName(
-            self, "保存文件", config_center.schedule_name.replace('.json', '.yaml'), "CSES 通用课程表交换文件 (*.yaml)")
+            self, "保存文件", file_name.replace('.json', '.yaml'), "CSES 通用课程表交换文件 (*.yaml)")
         if file_path:
             exporter = CSES_Converter(file_path)
             exporter.load_generator()
-            if exporter.convert_to_cses(cw_path=f'{base_directory}/config/schedule/{config_center.schedule_name}'):
+            if exporter.convert_to_cses(cw_path=f'{base_directory}/config/schedule/{file_name}'):
                 alert = MessageBox('您已成功导出课程表配置文件',
                                    f'文件将导出于{file_path}', self)
                 alert.cancelButton.hide()
