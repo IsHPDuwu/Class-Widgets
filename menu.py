@@ -1495,7 +1495,6 @@ class SettingsMenu(FluentWindow):
 
             self.id = id
 
-    # end of patch
     def cf_add_item(self, file_name, file_path, id):
         item_widget = self.cfFileItem(file_name, file_path, id, self)
         it = QListWidgetItem()
