@@ -1553,7 +1553,7 @@ class SettingsMenu(FluentWindow):
                     alpha = 15 if isDark else 9
                     c = 255 if isDark else 0
                     painter.setBrush(QColor(c, c, c, alpha))
-                    margin = 4
+                    margin = 8
                     bg_rect = option.rect.adjusted(0, margin, 0, -margin)
                     painter.drawRoundedRect(bg_rect, 5, 5)
 
@@ -1567,8 +1567,11 @@ class SettingsMenu(FluentWindow):
 
                     painter.restore()
                     super().paint(painter, option, index)
+                
+                def _drawBackground(self, painter, option, index):
+                    pass
 
-            def __init__(self, *args, min_item_width=200, max_item_width=300, item_height=60, **kwargs):
+            def __init__(self, *args, min_item_width=200, max_item_width=300, item_height=75, **kwargs):
                 super().__init__(*args, **kwargs)
                 self.min_item_width = min_item_width
                 self.max_item_width = max_item_width
