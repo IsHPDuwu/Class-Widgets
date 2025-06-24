@@ -1541,7 +1541,6 @@ class SettingsMenu(FluentWindow):
         old.deleteLater()
 
         class UniformListWidget(ListWidget):
-            # patch: qfw 的 ListWidget 开多列除第一列外没有选中条
             class cfCustomDelegate(ListItemDelegate):
                 def paint(self, painter: QPainter, option, index):
                     painter.save()
@@ -1554,12 +1553,10 @@ class SettingsMenu(FluentWindow):
                     alpha = 15 if isDark else 9
                     c = 255 if isDark else 0
                     painter.setBrush(QColor(c, c, c, alpha))
-                    # 关键：缩小背景绘制区域，留出上下边距
-                    margin = 3  # 你可以调整这个值
+                    margin = 4
                     bg_rect = option.rect.adjusted(0, margin, 0, -margin)
                     painter.drawRoundedRect(bg_rect, 5, 5)
 
-                    # 竖条：所有项都画
                     y, h = option.rect.y(), option.rect.height()
                     ph = round(0.35 * h if self.pressedRow == index.row() else 0.257 * h)
                     if index.row() in self.selectedRows:
@@ -1570,8 +1567,6 @@ class SettingsMenu(FluentWindow):
 
                     painter.restore()
                     super().paint(painter, option, index)
-                    
-            # end of patch
 
             def __init__(self, *args, min_item_width=200, max_item_width=300, item_height=60, **kwargs):
                 super().__init__(*args, **kwargs)
