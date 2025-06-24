@@ -19,7 +19,7 @@ from PyQt5.QtGui import QIcon, QDesktopServices, QColor
 from PyQt5.QtCore import Qt, pyqtSignal, QRectF
 from PyQt5.QtGui import QPainter
 from PyQt5.QtWidgets import QApplication, QHeaderView, QTableWidgetItem, QLabel, QHBoxLayout, QSizePolicy, \
-    QSpacerItem, QFileDialog, QVBoxLayout, QScroller, QWidget, QListWidgetItem, QWidget, QStyle
+    QSpacerItem, QFileDialog, QVBoxLayout, QScroller, QWidget, QListWidgetItem, QWidget, QListView
 from packaging.version import Version
 from loguru import logger
 from qfluentwidgets import (
@@ -1608,6 +1608,17 @@ class SettingsMenu(FluentWindow):
                     item.setSizeHint(QSize(item_width - spacing, self.item_height))
                 if event:
                     super().resizeEvent(event)
+
+            def mouseReleaseEvent(self, e):
+                QListView.mouseReleaseEvent(self, e)
+                if e.button() == Qt.LeftButton:
+                    self.updateSelectedRows()
+                elif e.button() == Qt.RightButton:
+                    index = self.indexAt(e.pos()).row()
+                    # 触发 index 的 settings 的 exec
+                    if index >= 0:
+                        item = self.itemWidget(self.item(index))
+                        item.settings._showMenu()
             
         # 新建并插入
         self.table = UniformListWidget(parent=self.cfInterface)
