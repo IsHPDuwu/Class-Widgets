@@ -1550,6 +1550,8 @@ class SettingsMenu(FluentWindow):
                 self.setWrapping(True)
                 self.setSpacing(16)
                 self.setGridSize(QSize(self.min_item_width, self.item_height))
+                self.setItemDelegate(self.cfCustomDelegate(self))  # 使用自定义的 Delegate
+                self.setViewMode(ListWidget.IconMode)
                 self.setItemDelegate(self.cfCustomDelegate(self))
                 self.setContentsMargins(12, 12, 12, 12)
 
@@ -1565,8 +1567,8 @@ class SettingsMenu(FluentWindow):
                     item = self.item(i)
                     widget = self.itemWidget(item)
                     if widget:
-                        widget.setFixedWidth(item_width)
-                    item.setSizeHint(QSize(item_width, self.item_height))
+                        widget.setFixedWidth(item_width - spacing)
+                    item.setSizeHint(QSize(item_width - spacing, self.item_height))
                 super().resizeEvent(event)
 
         # 新建并插入
@@ -2412,10 +2414,6 @@ class SettingsMenu(FluentWindow):
             self.sp_fill_grid_row()
 
             self.table.clear()
-            self.table.setViewMode(ListWidget.IconMode)  # 允许横向排列
-            self.table.setFlow(ListWidget.LeftToRight)  # 设置从左到右排列
-            self.table.setResizeMode(ListWidget.Adjust)  # 调整大小
-            self.table.setWrapping(True)  # 允许换行
 
             config_list = list_.get_schedule_config()
             self.cf_file_list.clear()
