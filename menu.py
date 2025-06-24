@@ -1583,7 +1583,6 @@ class SettingsMenu(FluentWindow):
                 self.setGridSize(QSize(self.min_item_width, self.item_height))
                 self.setItemDelegate(self.cfCustomDelegate(self))  # 使用自定义的 Delegate
                 self.setViewMode(ListWidget.ListMode)
-                self.setItemDelegate(self.cfCustomDelegate(self))
                 self.setContentsMargins(0, 12, 0, 12)
                 self.setDragEnabled(False)
                 self.setDragDropMode(ListWidget.NoDragDrop)
