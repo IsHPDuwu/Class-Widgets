@@ -1571,7 +1571,7 @@ class SettingsMenu(FluentWindow):
                 def _drawBackground(self, painter, option, index):
                     pass
 
-            def __init__(self, *args, min_item_width=200, max_item_width=300, item_height=75, **kwargs):
+            def __init__(self, *args, min_item_width=200, max_item_width=400, item_height=75, **kwargs):
                 super().__init__(*args, **kwargs)
                 self.min_item_width = min_item_width
                 self.max_item_width = max_item_width
