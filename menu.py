@@ -1485,7 +1485,6 @@ class SettingsMenu(FluentWindow):
             self.file_path.setWordWrap(True)
             
             self.settings = self.findChild(DropDownToolButton, 'file_item_settings')
-            self.settings.setIcon(fIcon.SETTING)
 
             menu = RoundMenu(parent=self.settings)
             menu.addAction(Action(fIcon.SAVE, '导出', triggered=lambda: parent.cf_export_schedule(file_name)))
@@ -1549,15 +1548,17 @@ class SettingsMenu(FluentWindow):
                 self.setResizeMode(ListWidget.Adjust)
                 self.setFlow(ListWidget.LeftToRight)
                 self.setWrapping(True)
-                self.setSpacing(8)
+                self.setSpacing(16)
                 self.setGridSize(QSize(self.min_item_width, self.item_height))
-                self.setItemDelegate(self.cfCustomDelegate(self))  # 使用自定义的 Delegate
+                self.setItemDelegate(self.cfCustomDelegate(self))
+                self.setContentsMargins(12, 12, 12, 12)
 
             def resizeEvent(self, event):
                 spacing = self.spacing()
-                n = max(1, self.width() // (self.min_item_width + spacing))
-                item_width = (self.width() - (n + 1) * spacing) // n
-                # 限制最大宽度
+                margins = self.contentsMargins()
+                available_width = self.width() - margins.left() - margins.right()
+                n = max(1, available_width // (self.min_item_width + spacing))
+                item_width = (available_width - (n - 1) * spacing) // n
                 item_width = min(max(item_width, self.min_item_width), self.max_item_width)
                 self.setGridSize(QSize(item_width, self.item_height))
                 for i in range(self.count()):
