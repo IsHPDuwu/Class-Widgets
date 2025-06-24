@@ -1550,6 +1550,15 @@ class SettingsMenu(FluentWindow):
                     painter.setClipping(True)
                     painter.setClipRect(option.rect)
 
+                    isDark = isDarkTheme()
+                    alpha = 15 if isDark else 9
+                    c = 255 if isDark else 0
+                    painter.setBrush(QColor(c, c, c, alpha))
+                    # 关键：缩小背景绘制区域，留出上下边距
+                    margin = 3  # 你可以调整这个值
+                    bg_rect = option.rect.adjusted(0, margin, 0, -margin)
+                    painter.drawRoundedRect(bg_rect, 5, 5)
+
                     # 竖条：所有项都画
                     y, h = option.rect.y(), option.rect.height()
                     ph = round(0.35 * h if self.pressedRow == index.row() else 0.257 * h)
