@@ -16,10 +16,10 @@ from PyQt5 import uic, QtCore
 from PyQt5.QtCore import Qt, QTime, QUrl, QDate, pyqtSignal, QSize, QThread
 from PyQt5.QtGui import QIcon, QDesktopServices, QColor
 # from PyQt5.QtPrintSupport import QPrinter
-from PyQt5.QtCore import Qt, pyqtSignal
+from PyQt5.QtCore import Qt, pyqtSignal, QRectF
 from PyQt5.QtGui import QPainter
 from PyQt5.QtWidgets import QApplication, QHeaderView, QTableWidgetItem, QLabel, QHBoxLayout, QSizePolicy, \
-    QSpacerItem, QFileDialog, QVBoxLayout, QScroller, QWidget, QListWidgetItem, QWidget
+    QSpacerItem, QFileDialog, QVBoxLayout, QScroller, QWidget, QListWidgetItem, QWidget, QStyle
 from packaging.version import Version
 from loguru import logger
 from qfluentwidgets import (
@@ -1532,12 +1532,34 @@ class SettingsMenu(FluentWindow):
         class UniformListWidget(ListWidget):
             # patch: qfw 的 ListWidget 开多列除第一列外没有选中条
             class cfCustomDelegate(ListItemDelegate):
-                def _drawIndicator(self, painter: QPainter, option, index):
-                    # 计算绘制位置
-                    x, y, h = option.rect.x(), option.rect.y(), option.rect.height()
-                    ph = round(0.35*h if self.pressedRow == index.row() else 0.257*h)
-                    painter.setBrush(themeColor())
-                    painter.drawRoundedRect(x, ph + y, 3, h - 2*ph, 1.5, 1.5)
+                def paint(self, painter: QPainter, option, index):
+                    painter.save()
+                    painter.setPen(Qt.NoPen)
+                    painter.setRenderHint(painter.Antialiasing)
+                    painter.setClipping(True)
+                    painter.setClipRect(option.rect)
+
+                    isDark = isDarkTheme()
+                    alpha = 15 if isDark else 9
+                    c = 255 if isDark else 0
+                    painter.setBrush(QColor(c, c, c, alpha))
+                    # 关键：缩小背景绘制区域，留出上下边距
+                    margin = 3  # 你可以调整这个值
+                    bg_rect = option.rect.adjusted(0, margin, 0, -margin)
+                    painter.drawRoundedRect(bg_rect, 5, 5)
+
+                    # 竖条：所有项都画
+                    y, h = option.rect.y(), option.rect.height()
+                    ph = round(0.35 * h if self.pressedRow == index.row() else 0.257 * h)
+                    if index.row() in self.selectedRows:
+                        painter.setBrush(themeColor())
+                    else:
+                        painter.setBrush(QColor("#e0e0e0"))
+                    painter.drawRoundedRect(option.rect.x(), ph + y, 3, h - 2 * ph, 1.5, 1.5)
+
+                    painter.restore()
+                    super().paint(painter, option, index)
+                    
             # end of patch
 
             def __init__(self, *args, min_item_width=200, max_item_width=300, item_height=60, **kwargs):
@@ -1553,7 +1575,7 @@ class SettingsMenu(FluentWindow):
                 self.setItemDelegate(self.cfCustomDelegate(self))  # 使用自定义的 Delegate
                 self.setViewMode(ListWidget.IconMode)
                 self.setItemDelegate(self.cfCustomDelegate(self))
-                self.setContentsMargins(12, 12, 12, 12)
+                self.setContentsMargins(0, 12, 0, 12)
 
             def resizeEvent(self, event):
                 spacing = self.spacing()
