@@ -2470,9 +2470,9 @@ class SettingsMenu(FluentWindow):
             w.cancelButton.hide()
             w.exec()
             return
-        self.update_thread = scheduleThread(url)
-        self.update_thread.update_signal.connect(self.cf_receive_schedule)
-        self.update_thread.start()
+        self.schedule_get_thread = scheduleThread(url)
+        self.schedule_get_thread.update_signal.connect(self.cf_receive_schedule)
+        self.schedule_get_thread.start()
 
     def cf_receive_schedule(self, data):
         if not (data.get('error', None) is None):
@@ -2499,9 +2499,9 @@ class SettingsMenu(FluentWindow):
                 w.cancelButton.hide()
                 w.exec()
                 return        
-            self.schedule_thread = scheduleThread(url)
-            self.schedule_thread.update_signal.connect(self.cf_receive_schedule_from_db)
-            self.schedule_thread.start()
+            self.schedule_load_thread = scheduleThread(url)
+            self.schedule_load_thread.update_signal.connect(self.cf_receive_schedule_from_db)
+            self.schedule_load_thread.start()
             self.config_url.setEnabled(False)
             
         except Exception as e:
@@ -2550,9 +2550,9 @@ class SettingsMenu(FluentWindow):
                 self.cf_file_list[self.table.currentIndex().row()].file_path.setText(url.replace('https://', '').replace('http://',''))
                 schedule_center.update_url(url)
 
-            schedule_thread = scheduleThread(url, 'POST', data=schedule_center.schedule_data)
-            schedule_thread.update_signal.connect(self.cf_receive_schedule_from_post)
-            schedule_thread.start()
+            self.schedule_post_thread = scheduleThread(url, 'POST', data=schedule_center.schedule_data)
+            self.schedule_post_thread.update_signal.connect(self.cf_receive_schedule_from_post)
+            self.schedule_post_thread.start()
             
         except Exception as e:
             logger.error(f'上传配置文件 {url} 时发生错误：{e}')
