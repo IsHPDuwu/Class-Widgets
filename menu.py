@@ -1472,6 +1472,8 @@ class SettingsMenu(FluentWindow):
             self.setupUi(self)
 
             self.url = file_path
+            self.parent_widget = parent  # 保存父组件引用
+            self.current_file_name = file_name  # 保存文件名
 
             self.file_name = self.findChild(StrongBodyLabel, 'file_name')
             self.file_name.setText(file_name)
@@ -1482,13 +1484,15 @@ class SettingsMenu(FluentWindow):
             
             self.settings = self.findChild(DropDownToolButton, 'file_item_settings')
 
-            menu = RoundMenu(parent=self.settings)
-            menu.addAction(Action(fIcon.SAVE, '导出', triggered=lambda: parent.cf_export_schedule(file_name)))
-            menu.addAction(Action(fIcon.SAVE, '导出为 CSES', triggered=lambda: parent.cf_export_schedule_cses(file_name)))
-
-            self.settings.setMenu(menu)
-
+            self.context_menu = RoundMenu(parent=self)
+            self.context_menu.addAction(Action(fIcon.SAVE, '导出', triggered=lambda: parent.cf_export_schedule(file_name)))
+            self.context_menu.addAction(Action(fIcon.SAVE, '导出为 CSES', triggered=lambda: parent.cf_export_schedule_cses(file_name)))
+            self.settings.setMenu(self.context_menu)
             self.id = id
+
+        def contextMenuEvent(self, event):
+            self.context_menu.exec(event.globalPos())
+            event.accept()
 
         def set_file_path(self, file_path):
             self.url = file_path
