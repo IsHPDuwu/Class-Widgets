@@ -1473,16 +1473,12 @@ class SettingsMenu(FluentWindow):
 
             self.url = file_path
 
-            if file_path.startswith('http://'):
-                file_path = file_path.replace('http://', '')
-            elif file_path.startswith('https://'):
-                file_path = file_path.replace('https://', '')
-
             self.file_name = self.findChild(StrongBodyLabel, 'file_name')
             self.file_name.setText(file_name)
             self.file_path = self.findChild(BodyLabel, 'file_path')
-            self.file_path.setText(file_path)
-            self.file_path.setWordWrap(True)
+            self.file_path.setWordWrap(False)
+
+            self.set_file_path(file_path)
             
             self.settings = self.findChild(DropDownToolButton, 'file_item_settings')
 
@@ -1493,6 +1489,21 @@ class SettingsMenu(FluentWindow):
             self.settings.setMenu(menu)
 
             self.id = id
+
+        def set_file_path(self, file_path):
+            self.url = file_path
+            is_db = False
+            for db in list_.schedule_dbs:
+                if file_path.startswith(list_.schedule_dbs[db]):
+                    file_path = file_path.replace(list_.schedule_dbs[db], db)
+                    is_db = True
+                    break
+            if not is_db:
+                if file_path.startswith('http://'):
+                    file_path = file_path.replace('http://', '')
+                elif file_path.startswith('https://'):
+                    file_path = file_path.replace('https://', '')
+            self.file_path.setText(file_path)
 
     def cf_add_item(self, file_name, file_path, id):
         item_widget = self.cfFileItem(file_name, file_path, id, self)
@@ -2561,8 +2572,7 @@ class SettingsMenu(FluentWindow):
                         url = url.replace(db, list_.schedule_dbs[db])
                         break
                 
-                self.cf_file_list[self.table.currentIndex().row()].url = url
-                self.cf_file_list[self.table.currentIndex().row()].file_path.setText(url.replace('https://', '').replace('http://',''))
+                self.cf_file_list[self.table.currentIndex().row()].set_file_path(url)
                 schedule_center.update_url(url)
 
             self.schedule_post_thread = scheduleThread(url, 'POST', data=schedule_center.schedule_data)
