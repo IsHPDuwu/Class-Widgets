@@ -1576,6 +1576,9 @@ class SettingsMenu(FluentWindow):
                 self.setViewMode(ListWidget.IconMode)
                 self.setItemDelegate(self.cfCustomDelegate(self))
                 self.setContentsMargins(0, 12, 0, 12)
+                self.setDragEnabled(False)
+                self.setDragDropMode(ListWidget.NoDragDrop)
+                self.setDefaultDropAction(Qt.IgnoreAction)
 
             def resizeEvent(self, event):
                 spacing = self.spacing()
