@@ -1602,7 +1602,8 @@ class SettingsMenu(FluentWindow):
                     if widget:
                         widget.setFixedWidth(item_width - spacing)
                     item.setSizeHint(QSize(item_width - spacing, self.item_height))
-                super().resizeEvent(event)
+                if event:
+                    super().resizeEvent(event)
             
         # 新建并插入
         self.table = UniformListWidget(parent=self.cfInterface)
@@ -2456,6 +2457,7 @@ class SettingsMenu(FluentWindow):
 
             self.table.setCurrentRow(list_.get_schedule_config().index(f'{new_name}.json'))
             self.table.currentRowChanged.connect(self.cf_change_file)
+            self.table.resizeEvent(None)
         except Exception as e:
             print(f'新建配置文件时发生错误：{e}')
             logger.error(f'新建配置文件时发生错误：{e}')
