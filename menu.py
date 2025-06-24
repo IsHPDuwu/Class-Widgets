@@ -1595,7 +1595,7 @@ class SettingsMenu(FluentWindow):
                         widget.setFixedWidth(item_width - spacing)
                     item.setSizeHint(QSize(item_width - spacing, self.item_height))
                 super().resizeEvent(event)
-
+            
         # 新建并插入
         self.table = UniformListWidget(parent=self.cfInterface)
         parent_layout.insertWidget(idx, self.table)
