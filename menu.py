@@ -32,7 +32,6 @@ import conf
 import list_ as list_
 import tip_toast
 import utils
-from utils import update_tray_tooltip, time_center
 import weather
 import weather as wd
 from conf import base_directory
