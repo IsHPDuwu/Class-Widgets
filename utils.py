@@ -332,14 +332,14 @@ class TimeCenter():
         self.ntp_timer.start(self.ntp_interval * 1000)  # 转换为毫秒
         self.ntp()
 
-    def get_time_offset() -> int:  # 获取时差偏移
+    def get_time_offset(self) -> int:  # 获取时差偏移
         time_offset = config_center.read_conf('Time', 'offset')
         if time_offset is None or time_offset == '' or time_offset == '0':
             return 0
         else:
             return int(time_offset)
         
-    def get_ntp_server() -> str:
+    def get_ntp_server(self) -> str:
         """
         获取 NTP 服务器地址
         """
