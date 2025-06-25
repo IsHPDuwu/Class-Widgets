@@ -32,7 +32,7 @@ import conf
 import list_ as list_
 import tip_toast
 import utils
-from utils import update_tray_tooltip
+from utils import update_tray_tooltip, time_center
 import weather
 import weather as wd
 from conf import base_directory
@@ -1745,6 +1745,12 @@ class SettingsMenu(FluentWindow):
         ntp_server = self.adInterface.findChild(LineEdit, 'ntp_server')
         ntp_server.setText(config_center.read_conf('Time', 'ntp_server'))
         ntp_server.textChanged.connect(lambda: config_center.write_conf('Time', 'ntp_server', ntp_server.text()))
+
+        self.ntp_sync_time = self.adInterface.findChild(CaptionLabel, 'ntp_sync_time')
+        self.ntp_sync_time.setText(f'最后一次同步时间：{time_center.last_sync_time.strftime("%Y-%m-%d %H:%M:%S") if time_center.last_sync_time else "未同步"}')
+
+        ntp_sync = self.adInterface.findChild(PushButton, 'ntp_sync')
+        ntp_sync.clicked.connect(lambda: time_center.ntp() and self.ntp_sync_time.setText(f'最后一次同步时间：{time_center.last_sync_time.strftime("%Y-%m-%d %H:%M:%S") if time_center.last_sync_time else "未同步"}'))
         
     def setup_schedule_edit(self):
         se_load_item()

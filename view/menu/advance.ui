@@ -56,7 +56,7 @@
         <x>0</x>
         <y>0</y>
         <width>717</width>
-        <height>1977</height>
+        <height>1992</height>
        </rect>
       </property>
       <layout class="QVBoxLayout" name="verticalLayout_21">
@@ -462,7 +462,21 @@
                 </property>
                </widget>
               </item>
+              <item>
+               <widget class="CaptionLabel" name="ntp_sync_time">
+                <property name="text">
+                 <string>最后一次同步时间：未同步</string>
+                </property>
+               </widget>
+              </item>
              </layout>
+            </item>
+            <item>
+             <widget class="PushButton" name="ntp_sync">
+              <property name="text">
+               <string>手动校准</string>
+              </property>
+             </widget>
             </item>
             <item>
              <widget class="SwitchButton" name="use_ntp">

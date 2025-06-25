@@ -330,6 +330,7 @@ class TimeCenter():
         self.ntp_timer = QTimer()
         self.ntp_timer.timeout.connect(self.ntp)
         self.ntp_timer.start(self.ntp_interval * 1000)  # 转换为毫秒
+        self.last_sync_time = None
         self.ntp()
 
     def get_time_offset(self) -> int:  # 获取时差偏移
@@ -345,7 +346,7 @@ class TimeCenter():
         """
         return config_center.read_conf('Time', 'ntp_server', 'pool.ntp.org')
         
-    def ntp(self) -> None:
+    def ntp(self) -> bool:
         """
         使用 ntp 获取系统时间与 ntp 的时间差
         """
@@ -360,9 +361,12 @@ class TimeCenter():
             response = client.request(self.get_ntp_server(), version=3)
             self.offset_ntp = response.offset
             current_time = dt.datetime.now() + dt.timedelta(seconds=self.offset_ntp)
+            self.last_sync_time = current_time
             logger.debug(f"NTP 获取时间成功: {current_time} (偏移: {self.offset_ntp} 秒)")
+            return True
         except Exception as e:
             logger.error(f"NTP 获取时间失败: {e}")
+            return False
     
     def now(self) -> dt.datetime:
         if self.offset_ntp is None:
