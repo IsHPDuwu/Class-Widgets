@@ -324,8 +324,6 @@ update_timer = UnionUpdateTimer()
 
 class TimeCenter():
     def __init__(self) -> None:
-        from conf import get_time_offset
-        self.get_time_offset = get_time_offset
         self.offset_ntp = None
         # ntp 时间间隔
         self.ntp_interval = 360  
@@ -333,6 +331,13 @@ class TimeCenter():
         self.ntp_timer.timeout.connect(self.ntp)
         self.ntp_timer.start(self.ntp_interval * 1000)  # 转换为毫秒
         self.ntp()
+
+    def get_time_offset() -> int:  # 获取时差偏移
+        time_offset = config_center.read_conf('Time', 'offset')
+        if time_offset is None or time_offset == '' or time_offset == '0':
+            return 0
+        else:
+            return int(time_offset)
 
     def ntp(self) -> None:
         """

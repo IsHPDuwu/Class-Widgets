@@ -181,13 +181,6 @@ def remove_from_startup() -> None:
     if os.path.exists(shortcut_path):
         os.remove(shortcut_path)
 
-
-def get_time_offset() -> int:  # 获取时差偏移
-    time_offset = config_center.read_conf('Time', 'offset')
-    if time_offset is None or time_offset == '' or time_offset == '0':
-        return 0
-    else:
-        return int(time_offset)
     
 def update_countdown(cnt: int) -> None:
     global update_countdown_custom_last
