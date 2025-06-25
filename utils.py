@@ -338,7 +338,13 @@ class TimeCenter():
             return 0
         else:
             return int(time_offset)
-
+        
+    def get_ntp_server() -> str:
+        """
+        获取 NTP 服务器地址
+        """
+        return config_center.read_conf('Time', 'ntp_server', 'pool.ntp.org')
+        
     def ntp(self) -> None:
         """
         使用 ntp 获取系统时间与 ntp 的时间差
@@ -351,7 +357,7 @@ class TimeCenter():
             
             logger.debug("尝试通过 NTP 获取时间...")
             client = ntplib.NTPClient()
-            response = client.request('pool.ntp.org', version=3)
+            response = client.request(self.get_ntp_server(), version=3)
             self.offset_ntp = response.offset
             current_time = dt.datetime.now() + dt.timedelta(seconds=self.offset_ntp)
             logger.debug(f"NTP 获取时间成功: {current_time} (偏移: {self.offset_ntp} 秒)")

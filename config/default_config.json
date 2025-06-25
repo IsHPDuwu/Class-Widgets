@@ -94,6 +94,7 @@
   },
   "Time": {
     "offset": 0,
-    "use_ntp": 1
+    "use_ntp": 1,
+    "ntp_server": "pool.ntp.org"
   }
 }

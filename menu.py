@@ -1740,7 +1740,11 @@ class SettingsMenu(FluentWindow):
 
         use_ntp = self.adInterface.findChild(SwitchButton, 'use_ntp')
         use_ntp.setChecked(int(config_center.read_conf('Time', 'use_ntp')))
-        use_ntp.checkedChanged.connect(lambda checked: switch_checked('Time', 'use_ntp', checked))  # 使用NTP时间
+        use_ntp.checkedChanged.connect(lambda checked: switch_checked('Time', 'use_ntp', checked))
+
+        ntp_server = self.adInterface.findChild(LineEdit, 'ntp_server')
+        ntp_server.setText(config_center.read_conf('Time', 'ntp_server'))
+        ntp_server.textChanged.connect(lambda: config_center.write_conf('Time', 'ntp_server', ntp_server.text()))
         
     def setup_schedule_edit(self):
         se_load_item()
