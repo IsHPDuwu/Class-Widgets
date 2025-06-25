@@ -1737,6 +1737,10 @@ class SettingsMenu(FluentWindow):
             w.cancelButton.hide()
             w.exec()
         what_is_hide_mode_3.clicked.connect(what_is_hide_mode_3_clicked)
+
+        use_ntp = self.adInterface.findChild(SwitchButton, 'use_ntp')
+        use_ntp.setChecked(int(config_center.read_conf('Time', 'use_ntp')))
+        use_ntp.checkedChanged.connect(lambda checked: switch_checked('Time', 'use_ntp', checked))  # 使用NTP时间
         
     def setup_schedule_edit(self):
         se_load_item()
