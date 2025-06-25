@@ -14,6 +14,7 @@ from PyQt5 import QtCore
 import darkdetect
 import datetime as dt
 import winreg
+import ntplib
 
 from file import base_directory, config_center
 import signal
@@ -320,3 +321,46 @@ def slice_str_by_length(text: str, max_length: int) -> str:
 
 tray_icon = None
 update_timer = UnionUpdateTimer()
+
+class TimeCenter():
+    def __init__(self) -> None:
+        from conf import get_time_offset
+        self.get_time_offset = get_time_offset
+        self.offset_ntp = None
+        # ntp 时间间隔
+        self.ntp_interval = 360  
+        self.ntp_timer = QTimer()
+        self.ntp_timer.timeout.connect(self.ntp)
+        self.ntp_timer.start(self.ntp_interval * 1000)  # 转换为毫秒
+        self.ntp()
+
+    def ntp(self) -> None:
+        """
+        使用 ntp 获取系统时间与 ntp 的时间差
+        """
+        try:
+            if config_center.read_conf('Time', 'use_ntp', '1') == '0':
+                logger.debug("NTP 功能已禁用，跳过 NTP 时间获取")
+                self.offset_ntp = 0
+                return
+            
+            logger.debug("尝试通过 NTP 获取时间...")
+            client = ntplib.NTPClient()
+            response = client.request('pool.ntp.org', version=3)
+            self.offset_ntp = response.offset
+            current_time = dt.datetime.now() + dt.timedelta(seconds=self.offset_ntp)
+            logger.debug(f"NTP 获取时间成功: {current_time} (偏移: {self.offset_ntp} 秒)")
+        except Exception as e:
+            logger.error(f"NTP 获取时间失败: {e}")
+    
+    def now(self) -> dt.datetime:
+        if self.offset_ntp is None:
+            logger.warning("NTP 未初始化，使用本地时间")
+            return dt.datetime.now() + dt.timedelta(seconds=self.get_time_offset())
+        else:
+            current_time = dt.datetime.now() + dt.timedelta(seconds=self.offset_ntp + self.get_time_offset())
+            return current_time
+        
+
+
+time_center = TimeCenter()

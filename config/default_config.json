@@ -3,7 +3,6 @@
     "schedule": "新课表 - 1.json",
     "pin_on_top": 1,
     "margin": 10,
-    "time_offset": 0,
     "opacity": 95,
     "auto_startup": 0,
     "hide": 0,
@@ -92,5 +91,9 @@
     "safe_plugin": 1,
     "initialstartup": 1,
     "multiple_programs": 0
+  },
+  "Time": {
+    "offset": 0,
+    "use_ntp": 1
   }
 }

@@ -42,7 +42,7 @@ from weather import WeatherReportThread as weatherReportThread
 from weather import get_unified_weather_alerts, get_alert_image
 from play_audio import play_audio
 from plugin import p_loader
-from utils import restart, stop, share, update_timer, DarkModeWatcher
+from utils import restart, stop, share, update_timer, DarkModeWatcher, time_center
 from file import config_center, schedule_center
 
 if os.name == 'nt':
@@ -66,8 +66,8 @@ error_dialog = None
 
 current_lesson_name = '课程表未加载'
 current_state = 0  # 0：课间 1：上课 2: 休息段
-current_time = dt.datetime.now().strftime('%H:%M:%S')
-current_week = dt.datetime.now().weekday()
+current_time = time_center.now().strftime('%H:%M:%S')
+current_week = time_center.now().weekday()
 current_lessons = {}
 loaded_data = {}
 parts_type = []
@@ -91,7 +91,7 @@ time_offset = 0  # 时差偏移
 first_start = True
 error_cooldown = dt.timedelta(seconds=2)  # 冷却时间(s)
 ignore_errors = []
-last_error_time = dt.datetime.now() - error_cooldown  # 上一次错误
+last_error_time = time_center.now() - error_cooldown  # 上一次错误
 
 ex_menu = None
 dark_mode_watcher = None
@@ -115,7 +115,7 @@ def global_exceptHook(exc_type: type, exc_value: Exception, exc_tb: Any) -> None
 
     global last_error_time, error_dialog, error_cooldown
 
-    current_time = dt.datetime.now()
+    current_time = time_center.now()
     if current_time - last_error_time > error_cooldown:  # 冷却时间
         last_error_time = current_time
         logger.error(f"全局异常捕获：{exc_type} {exc_value} {exc_tb}")
@@ -219,7 +219,7 @@ def get_start_time() -> None:
                 part_type = 'part'
 
             # 应用时差偏移到课程表时间
-            start_time = dt.datetime.combine(today, dt.time(h, m)) + dt.timedelta(seconds=time_offset)
+            start_time = dt.datetime.combine(today, dt.time(h, m))
             parts_start_time.append(start_time)
             order.append(item_name)
             parts_type.append(part_type)
@@ -268,7 +268,7 @@ def get_part() -> Optional[Tuple[dt.datetime, int]]:
         c_time = parts_start_time[i]
         return c_time, int(order[i])  # 返回开始时间、Part序号
 
-    current_dt = dt.datetime.now() # 当前时间
+    current_dt = time_center.now() # 当前时间
 
     for i in range(len(parts_start_time)):  # 遍历每个Part
         time_len = dt.timedelta(minutes=0)  # Part长度
@@ -285,7 +285,7 @@ def get_part() -> Optional[Tuple[dt.datetime, int]]:
                 if current_dt <= parts_start_time[i] + time_len:
                     return return_data()
 
-    return parts_start_time[0] + dt.timedelta(seconds=time_offset), 0, 'part'
+    return parts_start_time[0], 0, 'part'
 
 def get_excluded_lessons() -> None:
     global excluded_lessons
@@ -333,7 +333,7 @@ def get_current_lessons() -> None:  # 获取当前课程
 # 获取倒计时、弹窗提示
 def get_countdown(toast: bool = False) -> Optional[List[Union[str, int]]]:  # 重构好累aaaa
     global last_notify_time
-    current_dt = dt.datetime.now()
+    current_dt = time_center.now()
     if last_notify_time and (current_dt - last_notify_time).seconds < notify_cooldown:
         return
     def after_school():  # 放学
@@ -418,7 +418,7 @@ def get_countdown(toast: bool = False) -> Optional[List[Union[str, int]]]:  # �
                         if lesson_name != '暂无课程':
                             next_lesson_name = lesson_name
                     if current_state == 0:
-                        now = dt.datetime.now()
+                        now = time_center.now()
                         if not last_notify_time or (now - last_notify_time).seconds >= notify_cooldown:
                             if next_lesson_name != None:
                                     notification.push_notification(3, next_lesson_name)
@@ -2019,8 +2019,7 @@ class DesktopWidget(QWidget):  # 主要小组件
         global current_time, current_week, start_y, time_offset, today
 
         today = dt.date.today()
-        current_time = dt.datetime.now().strftime('%H:%M:%S')
-        time_offset = conf.get_time_offset()
+        current_time = time_center.now().strftime('%H:%M:%S')
 
         get_start_time()
         get_current_lessons()
@@ -2049,7 +2048,7 @@ class DesktopWidget(QWidget):  # 主要小组件
         if conf.is_temp_week():  # 调休日
             current_week = config_center.read_conf('Temp', 'set_week')
         else:
-            current_week = dt.datetime.now().weekday()
+            current_week = time_center.now().weekday()
         
         cd_list = get_countdown()
 

@@ -1715,9 +1715,9 @@ class SettingsMenu(FluentWindow):
             lambda: config_center.write_conf('Date', 'start_date', set_start_date.date.toString('yyyy-M-d')))  # 开学日期
 
         offset_spin = self.adInterface.findChild(SpinBox, 'offset_spin')
-        offset_spin.setValue(int(config_center.read_conf('General', 'time_offset')))
+        offset_spin.setValue(int(config_center.read_conf('Time', 'offset')))
         offset_spin.valueChanged.connect(
-            lambda: config_center.write_conf('General', 'time_offset', str(offset_spin.value()))
+            lambda: config_center.write_conf('Time', 'offset', str(offset_spin.value()))
         )  # 保存时差偏移
 
         text_scale_factor = self.adInterface.findChild(LineEdit, 'text_scale_factor')
