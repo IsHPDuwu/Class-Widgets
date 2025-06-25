@@ -38,7 +38,6 @@ import conf
 import list_ as list_
 import tip_toast
 import utils
-from utils import update_tray_tooltip
 import weather
 import weather as wd
 from conf import base_directory
@@ -2468,12 +2467,10 @@ class SettingsMenu(FluentWindow):
 
     def cf_change_file(self):  # 切换课程文件
         try:
-
             if self.cf_file_list[self.table.currentIndex().row()].file_name.text():
                 new_name = self.cf_file_list[self.table.currentIndex().row()].file_name.text()
                 config_center.write_conf('General', 'schedule', new_name)
-                update_tray_tooltip()
-
+                utils.tray_icon.update_tooltip()
             else:
                 logger.error(f'切换课程文件时列表选择异常：{self.cf_file_list[self.table.currentIndex().row()].file_name.text()}')
                 Flyout.create(
