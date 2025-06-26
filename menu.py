@@ -60,7 +60,7 @@ class I18nManager:
     def scan_available_languages(self):
         try:
             from pathlib import Path
-            main_i18n_dir = Path(conf.base_directory) / 'view' / 'i18n'
+            main_i18n_dir = Path(conf.base_directory) / 'i18n'
             if main_i18n_dir.exists():
                 for ts_file in main_i18n_dir.glob('*.ts'):
                     lang_code = ts_file.stem
@@ -130,7 +130,7 @@ class I18nManager:
                 return False
 
             main_translator = self._load_translation_file(
-                Path(conf.base_directory) / 'view' / 'i18n' / f'{lang_code}.qm'
+                Path(conf.base_directory) / 'i18n' / f'{lang_code}.qm'
             )
             if main_translator:
                 self.translators.append(main_translator)
