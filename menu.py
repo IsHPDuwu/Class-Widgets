@@ -2201,10 +2201,10 @@ class SettingsMenu(FluentWindow):
                                                    "Json 配置文件 (*.json)")
         if file_path:
             if list_.export_schedule(file_path, file_name):
-                alert = self.show_tip_flyout('您已成功导出课程表配置文件',
+                self.show_tip_flyout('您已成功导出课程表配置文件',
                                    f'文件将导出于{file_path}', self.cfInterface, InfoBarIcon.SUCCESS, FlyoutAnimationType.PULL_UP)
             else:
-                alert = self.show_tip_flyout('导出失败！',
+                self.show_tip_flyout('导出失败！',
                                    '课程表文件导出失败，\n'
                                    '可能为文件损坏，请将此情况反馈给开发者。', self.cfInterface, InfoBarIcon.ERROR, FlyoutAnimationType.PULL_UP)
 
@@ -2261,7 +2261,7 @@ class SettingsMenu(FluentWindow):
             importer.load_parser()
             cw_data = importer.convert_to_cw()
             if not cw_data:
-                alert = self.show_tip_flyout('转换失败！',
+                self.show_tip_flyout('转换失败！',
                                    '课程表文件转换失败！\n'
                                    '可能为格式错误或文件损坏，请检查此文件是否为正确的 CSES 课程表文件。\n'
                                    '详情请查看Log日志，日志位于./log/下。', self.import_from_file, InfoBarIcon.ERROR, FlyoutAnimationType.PULL_UP)
@@ -2269,12 +2269,12 @@ class SettingsMenu(FluentWindow):
                 with open(save_path, 'w', encoding='utf-8') as f:
                     json.dump(cw_data, f, ensure_ascii=False, indent=4)
                     self.cf_file_list.append(self.cf_add_item(file_name.replace('.yaml', '.json'),'local',len(self.cf_file_list)))
-                    alert = self.show_tip_flyout('导入成功！',
+                    self.show_tip_flyout('导入成功！',
                                    '课程表文件导入成功！\n'
                                    '请手动切换您的配置文件。', self.import_from_file, InfoBarIcon.SUCCESS, FlyoutAnimationType.PULL_UP)
             except Exception as e:
                 logger.error(f'导入课程表时发生错误：{e}')
-                alert = self.show_tip_flyout('导入失败！',
+                self.show_tip_flyout('导入失败！',
                                    '课程表文件导入失败！\n'
                                    '可能为格式错误或文件损坏，请检查此文件是否为正确的 CSES 课程表文件。\n'
                                    '详情请查看Log日志，日志位于./log/下。', self.import_from_file, InfoBarIcon.ERROR, FlyoutAnimationType.PULL_UP)
@@ -2286,10 +2286,10 @@ class SettingsMenu(FluentWindow):
             exporter = CSES_Converter(file_path)
             exporter.load_generator()
             if exporter.convert_to_cses(cw_path=f'{base_directory}/config/schedule/{file_name}'):
-                alert = self.show_tip_flyout('您已成功导出课程表配置文件',
+                self.show_tip_flyout('您已成功导出课程表配置文件',
                                    f'文件将导出于{file_path}', self.cfInterface, InfoBarIcon.SUCCESS, FlyoutAnimationType.PULL_UP)
             else:
-                alert = self.show_tip_flyout('导出失败！',
+                self.show_tip_flyout('导出失败！',
                                    '课程表文件导出失败，\n'
                                    '可能为文件损坏，请将此情况反馈给开发者。', self, InfoBarIcon.ERROR, FlyoutAnimationType.PULL_UP)
 
@@ -2301,10 +2301,10 @@ class SettingsMenu(FluentWindow):
             file_name = file_path.split("/")[-1]
             if list_.import_schedule(file_path, file_name):
                 self.cf_file_list.append(self.cf_add_item(file_name,'local',len(self.cf_file_list)))
-                alert = self.show_tip_flyout('您已成功导入课程表配置文件',
+                self.show_tip_flyout('您已成功导入课程表配置文件',
                                    f'文件将导入于{file_name}，请手动切换您的配置文件。', self.import_from_file, InfoBarIcon.SUCCESS, FlyoutAnimationType.PULL_UP)
             else:
-                alert = self.show_tip_flyout('导入失败！',
+                self.show_tip_flyout('导入失败！',
                                    '课程表文件导入失败！\n'
                                    '可能为格式错误或文件损坏，请检查此文件是否为 Class Widgets 课程表文件。\n'
                                    '详情请查看Log日志，日志位于./log/下。', self.import_from_file, InfoBarIcon.ERROR, FlyoutAnimationType.PULL_UP)
@@ -2466,7 +2466,7 @@ class SettingsMenu(FluentWindow):
     def cf_get_schedule(self):
         url = schedule_center.schedule_data.get('url', 'local')
         if url == 'local':
-            alert = self.show_tip_flyout('获取配置文件失败',
+            self.show_tip_flyout('获取配置文件失败',
                                    '当前课表为本地课表，无法获取配置文件。请上传课表后再尝试获取配置文件。',
                                    self.config_download, InfoBarIcon.ERROR, FlyoutAnimationType.PULL_UP)
             return
@@ -2476,14 +2476,14 @@ class SettingsMenu(FluentWindow):
 
     def cf_receive_schedule(self, data):
         if not (data.get('error', None) is None):
-            alert = self.show_tip_flyout('获取配置文件失败',
+            self.show_tip_flyout('获取配置文件失败',
                                    data['error'], self.config_download, InfoBarIcon.ERROR, FlyoutAnimationType.PULL_UP)
             return
         try:
             schedule_center.save_data(data, config_center.schedule_name)
         except ValueError as e:
             logger.error(f'更新配置文件 {config_center.schedule_name} 时发生错误：{e}')
-            alert = self.show_tip_flyout('更新配置文件失败',
+            self.show_tip_flyout('更新配置文件失败',
                                    f"{e}", self.config_download, InfoBarIcon.ERROR, FlyoutAnimationType.PULL_UP)  
             return
         schedule_center.update_schedule()
@@ -2493,7 +2493,7 @@ class SettingsMenu(FluentWindow):
             self.config_url:LineEdit = self.cfInterface.findChild(LineEdit, 'config_url')
             url = self.config_url.text()
             if url == '':
-                alert = self.show_tip_flyout('请输入配置文件链接',
+                self.show_tip_flyout('请输入配置文件链接',
                                    '请输入配置文件链接', self.config_url, InfoBarIcon.WARNING, FlyoutAnimationType.DROP_DOWN)
                 return        
             self.schedule_load_thread = scheduleThread(url)
@@ -2506,7 +2506,7 @@ class SettingsMenu(FluentWindow):
     
     def cf_receive_schedule_from_db(self, data):
         if not (data.get('error', None) is None):
-            alert = self.show_tip_flyout('获取配置文件失败',
+            self.show_tip_flyout('获取配置文件失败',
                                    data['error'], self.config_download, InfoBarIcon.ERROR, FlyoutAnimationType.PULL_UP)
             self.config_url.setEnabled(True)
             return
@@ -2518,7 +2518,7 @@ class SettingsMenu(FluentWindow):
             schedule_center.save_data(data, config_center.schedule_name)
         except ValueError as e:
             logger.error(f'保存配置文件 {url} 时发生错误：{e}')
-            alert = self.show_tip_flyout('保存配置文件失败，将自动保存为空课表',
+            self.show_tip_flyout('保存配置文件失败，将自动保存为空课表',
                                    f"{e}", self.config_download, InfoBarIcon.ERROR, FlyoutAnimationType.PULL_UP)
             self.config_url.setEnabled(True)
             return
@@ -2550,12 +2550,12 @@ class SettingsMenu(FluentWindow):
             
         except Exception as e:
             logger.error(f'上传配置文件 {url} 时发生错误：{e}')
-            alert = self.show_tip_flyout('上传配置文件失败',
+            self.show_tip_flyout('上传配置文件失败',
                                    f"{e}", self.config_upload, InfoBarIcon.ERROR, FlyoutAnimationType.PULL_UP)
 
     def cf_receive_schedule_from_post(self, data):
         if data.get('error', None):
-            alert = self.show_tip_flyout('上传配置文件失败',
+            self.show_tip_flyout('上传配置文件失败',
                                    data['error'], self.config_upload, InfoBarIcon.ERROR, FlyoutAnimationType.PULL_UP)
 
     def check_and_disable_schedule_edit(self):
