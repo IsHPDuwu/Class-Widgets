@@ -45,7 +45,6 @@ from plugin_plaza import PluginPlaza
 
 
 from PyQt5.QtCore import QCoreApplication
-
 tr = QCoreApplication.translate
 
 class I18nManager:
@@ -3377,6 +3376,7 @@ class SettingsMenu(FluentWindow):
                 self
             )
             msg_box.yesButton.setText(self.tr('确定'))
+
             msg_box.cancelButton.hide()
             msg_box.exec()
 
@@ -3394,6 +3394,7 @@ class SettingsMenu(FluentWindow):
                         title = self.tr('组件语言切换成功 ♪(´▽｀)')
                         content = self.tr('menu','组件语言已切换为 {selected_lang_name}\n' \
                                 f'新语言将在重启程序后完全生效').format(selected_lang_name=selected_lang_name)
+
                         flyout = Flyout.create(title=title,
                                                content=content,
                                                target=language_combo_widgets,
