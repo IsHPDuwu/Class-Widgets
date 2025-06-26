@@ -56,23 +56,6 @@ class I18nManager:
         self.current_language_view = 'zh_CN'
         self.current_language_widgets = 'zh_CN'
         self.scan_available_languages()
-
-    def init_from_config(self):
-        """从配置文件初始化语言设置"""
-        try:
-            view_lang = config_center.read_conf('General', 'language_view')
-            if view_lang and view_lang in self.available_languages_view:
-                self.current_language_view = view_lang
-                self.load_language_view(view_lang)
-            widgets_lang = config_center.read_conf('General', 'language_widgets')
-            if widgets_lang and widgets_lang in self.available_languages_widgets:
-                self.current_language_widgets = widgets_lang
-                self.load_language_widgets(widgets_lang)
-            logger.info(f"从配置加载语言设置 - 界面: {self.current_language_view}, 组件: {self.current_language_widgets}")
-        except Exception as e:
-            logger.error(f"从配置加载语言设置时出错: {e}")
-            self.load_language_view('zh_CN')
-            self.load_language_widgets('zh_CN')
         
     def scan_available_languages(self):
         try:
@@ -137,14 +120,6 @@ class I18nManager:
     def get_current_language_widgets_name(self):
         """获取当前组件语言名称"""
         return self._get_language_display_name(self.current_language_widgets)
-
-    def clear_translators(self):
-        """清理所有翻译器"""
-        app = QApplication.instance()
-        if app:
-            for translator in self.translators:
-                app.removeTranslator(translator)
-        self.translators.clear()
         
     def load_language_view(self, lang_code):
         """加载界面语言文件"""
@@ -257,9 +232,6 @@ class I18nManager:
         
     def get_current_language_view_name(self):
         return self.available_languages_view.get(self.current_language_view, self.current_language_view)
-        
-    def get_current_language_widgets_name(self):
-        return self.available_languages_widgets.get(self.current_language_widgets, self.current_language_widgets)
         
     def init_from_config(self):
         """初始化设置"""
