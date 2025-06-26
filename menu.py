@@ -228,11 +228,7 @@ class I18nManager:
             for translator in self.translators:
                 app.removeTranslator(translator)
         self.translators.clear()
-        
-        
-    def get_current_language_view_name(self):
-        return self.available_languages_view.get(self.current_language_view, self.current_language_view)
-        
+           
     def init_from_config(self):
         """初始化设置"""
         try:
