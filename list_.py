@@ -249,10 +249,14 @@ def import_schedule(filepath: str, filename: str) -> bool:  # 导入课表
         logger.error(f"加载数据时出错: {e}")
         return False
 
-    checked_data = convert_schedule(check_data)
+    try:
+        checked_data = convert_schedule(check_data)
+    except Exception as e:
+        logger.error(f"转换数据时出错: {e}")
+        return False
     # 保存文件
     try:
-        print(check_data)
+        print(checked_data)
         copy(filepath, f'{base_directory}/config/schedule/{filename}')
         save_data_to_json(checked_data, filename)
         config_center.write_conf('General', 'schedule', filename)
@@ -266,10 +270,10 @@ def convert_schedule(check_data: Dict[str, Any]) -> Dict[str, Any]:  # 转换课
     # 校验课程表
     if check_data is None:
         logger.warning('此文件为空')
-        return False
+        raise ValueError('此文件为空')
     elif not check_data.get('timeline') and not check_data.get('schedule'):
         logger.warning('此文件不是课程表文件')
-        return False
+        raise ValueError('此文件不是课程表文件')
     # 转换为标准格式
     if not check_data.get('schedule_even'):
         logger.warning('此课程表格式不支持单双周')
@@ -306,7 +310,7 @@ def convert_schedule(check_data: Dict[str, Any]) -> Dict[str, Any]:  # 转换课
                 del check_data['timeline'][item_name]
         except Exception as e:
             logger.error(f"转换数据时出错: {e}")
-            return False
+            raise e
           
     return check_data
 
