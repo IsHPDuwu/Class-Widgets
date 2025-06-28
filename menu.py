@@ -2309,7 +2309,8 @@ class SettingsMenu(FluentWindow):
                 self.show_tip_flyout('导入失败！',
                                    '课程表文件导入失败！\n'
                                    '可能为格式错误或文件损坏，请检查此文件是否为 Class Widgets 课程表文件。\n'
-                                   '详情请查看Log日志，日志位于./log/下。', self.import_from_file, InfoBarIcon.ERROR, FlyoutAnimationType.PULL_UP)
+                                   '详情请查看Log日志，日志位于./log/下。\n'
+                                   '注意: 尚不支持 json 格式的 CSES 课表导入', self.import_from_file, InfoBarIcon.ERROR, FlyoutAnimationType.PULL_UP)
 
     def ct_save_widget_config(self):
         widgets_list = self.findChild(ListWidget, 'widgets_list')
