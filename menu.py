@@ -1608,22 +1608,10 @@ class SettingsMenu(FluentWindow):
                 if event:
                     super().resizeEvent(event)
             
-        # 新建并插入
         self.table = UniformListWidget(parent=self.cfInterface)
         parent_layout.insertWidget(idx, self.table)
 
-        # 继续之前的逻辑
-        self.table.clear()
-        
-        config_list = list_.get_schedule_config()
-        self.cf_file_list = []
-        for i, cfg in enumerate(config_list):
-            url = file.load_from_json(cfg).get('url','local')
-            self.cf_file_list.append(self.cf_add_item(cfg, url, i))
-
-        cur = config_list.index(config_center.read_conf('General','schedule'))
-        self.table.setCurrentRow(cur)
-        self.table.currentRowChanged.connect(self.cf_change_file)
+        self.cf_reload_table()
 
     def setup_customization_interface(self):
         ct_scroll = self.findChild(SmoothScrollArea, 'ct_scroll')  # 触摸屏适配
@@ -2254,9 +2242,15 @@ class SettingsMenu(FluentWindow):
     def cf_import_schedule_cses(self, file_path):  # 导入课程表（CSES）
         if file_path:
             file_name = file_path.split("/")[-1]
-            save_path = f"{base_directory}/config/schedule/{file_name.replace('.yaml', '.json')}"
+            save_path = base_directory / "config" / "schedule" / \
+                f"{file_name.replace('.yaml', '.json')}"
 
-            print(save_path)
+            if os.path.exists(save_path):
+                overwrite = MessageBox('文件已存在', f'文件 {file_name} 已存在，是否覆盖？', self)
+                overwrite.yesButton.setText('覆盖')
+                if not overwrite.exec():
+                    return
+        
             importer = CSES_Converter(file_path)
             importer.load_parser()
             cw_data = importer.convert_to_cw()
@@ -2268,7 +2262,7 @@ class SettingsMenu(FluentWindow):
             try:
                 with open(save_path, 'w', encoding='utf-8') as f:
                     json.dump(cw_data, f, ensure_ascii=False, indent=4)
-                    self.cf_file_list.append(self.cf_add_item(file_name.replace('.yaml', '.json'),'local',len(self.cf_file_list)))
+                    self.cf_reload_table()
                     self.show_tip_flyout('导入成功！',
                                    '课程表文件导入成功！\n'
                                    '请手动切换您的配置文件。', self.import_from_file, InfoBarIcon.SUCCESS, FlyoutAnimationType.PULL_UP)
@@ -2299,8 +2293,16 @@ class SettingsMenu(FluentWindow):
             if file_path.endswith('.yaml') or file_path.endswith('.yml'):
                 return self.cf_import_schedule_cses(file_path)
             file_name = file_path.split("/")[-1]
+
+            save_path = base_directory / "config" / "schedule" / file_name
+            if os.path.exists(save_path):
+                overwrite = MessageBox('文件已存在', f'文件 {file_name} 已存在，是否覆盖？', self)
+                overwrite.yesButton.setText('覆盖')
+                if not overwrite.exec():
+                    return
+        
             if list_.import_schedule(file_path, file_name):
-                self.cf_file_list.append(self.cf_add_item(file_name,'local',len(self.cf_file_list)))
+                self.cf_reload_table()
                 self.show_tip_flyout('您已成功导入课程表配置文件',
                                    f'文件将导入于{file_name}，请手动切换您的配置文件。', self.import_from_file, InfoBarIcon.SUCCESS, FlyoutAnimationType.PULL_UP)
             else:
@@ -2368,6 +2370,26 @@ class SettingsMenu(FluentWindow):
             widgets_preview.addItem(right_spacer)
         except Exception as e:
             logger.error(f'更新预览界面时发生错误：{e}')
+
+    def cf_reload_table(self):
+        try:
+            self.table.currentRowChanged.disconnect()
+        except:
+            pass
+
+        self.table.clear()
+        
+        config_list = list_.get_schedule_config()
+        self.cf_file_list = []
+        for i, cfg in enumerate(config_list):
+            url = file.load_from_json(cfg).get('url','local')
+            self.cf_file_list.append(self.cf_add_item(cfg, url, i))
+
+        cur = config_list.index(config_center.read_conf('General','schedule'))
+        self.table.setCurrentRow(cur)
+        
+        self.table.currentRowChanged.connect(self.cf_change_file)
+        self.table.resizeEvent(None)
 
     def cf_new_config(self):
         try:
