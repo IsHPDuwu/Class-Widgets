@@ -3335,7 +3335,7 @@ class SettingsMenu(FluentWindow):
             Flyout.create(
                 icon=InfoBarIcon.SUCCESS,
                 title='保存成功',
-                content=f"已保存至 {base_directory / 'config' / "schedule_db.json"}",
+                content=f"已保存至 {base_directory / 'config' / 'schedule_db.json'}",
                 target=self.save_button,
                 parent=self,
                 isClosable=True,
