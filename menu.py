@@ -3279,6 +3279,8 @@ class SettingsMenu(FluentWindow):
             self.table.addItems([f"{x[0]} - {x[1]}" for x in self.db_list])
 
         def edit_item(self):
+            if self.db_short.text() == '' or self.db_url.text() == '':
+                return
             selected_items = self.table.selectedItems()
             if selected_items:
                 selected_item = selected_items[0]
@@ -3310,6 +3312,8 @@ class SettingsMenu(FluentWindow):
                 self.db_list.pop(self.table.row(item))
 
         def add_item(self):
+            if self.db_short.text() == '' or self.db_url.text() == '':
+                return
             if self.db_dict.get(f"@{self.db_short.text()}", None):
                 Flyout.create(
                     icon=InfoBarIcon.ERROR,
