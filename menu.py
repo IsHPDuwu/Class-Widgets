@@ -106,7 +106,7 @@ class I18nManager:
             'zh_Hant': '繁體中文（HK）',
             # 'zh_SIMPLIFIED': '梗体中文',
             'en_US': 'English',
-            'ja': '日本語',
+            'ja_JP': '日本語',
             # 'ko_KR': '한국어',
             # 'fr_FR': 'Français',
             # 'de_DE': 'Deutsch',
@@ -123,7 +123,7 @@ class I18nManager:
             'zh_CN': QLocale(QLocale.Chinese, QLocale.China),
             'zh_Hant': QLocale(QLocale.Chinese, QLocale.HongKong),
             'en_US': QLocale(QLocale.English, QLocale.UnitedStates),
-            'ja': QLocale(QLocale.Japanese, QLocale.Japan),
+            'ja_JP': QLocale(QLocale.Japanese, QLocale.Japan),
         }
         return locale_list.get(lang_code, QLocale(QLocale.English, QLocale.UnitedStates))
         
@@ -157,7 +157,7 @@ class I18nManager:
                 self.translators.append(main_translator)
                 app.installTranslator(main_translator)
                 self.current_language_view = lang_code
-                config_center.write_conf('General', 'language_view', lang_code)
+                # config_center.write_conf('General', 'language_view', lang_code)
                 logger.success(f"成功加载界面语言: {lang_code} ({self.available_languages_view.get(lang_code, lang_code)})")
             else:
                 logger.warning(f"无法加载界面语言: {lang_code} ({self.available_languages_view.get(lang_code, lang_code)})")
@@ -255,7 +255,9 @@ class I18nManager:
     def init_from_config(self):
         """初始化设置"""
         try:
-            saved_language_view = config_center.read_conf('General', 'language_view', 'zh_CN')
+            saved_language_view = config_center.read_conf('General', 'language_view', 'system')
+            if saved_language_view == 'system':
+                saved_language_view = QLocale.system().name()
             if saved_language_view in self.get_available_languages_view():
                 self.load_language_view(saved_language_view)
             else:
