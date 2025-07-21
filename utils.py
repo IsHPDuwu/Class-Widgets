@@ -716,6 +716,7 @@ class TimeManagerFactory:
             
             return cls._instance
 
+main_mgr = None
 
 class SingleInstanceGuard:
     def __init__(self, lock_name="ClassWidgets.lock"):
