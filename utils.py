@@ -71,7 +71,8 @@ def restart() -> None:
         app.quit()
         app.processEvents()
 
-    _cleanup_shared_memory()
+    guard.release()
+
     os.execl(sys.executable, sys.executable, *sys.argv)
 
 def stop(status: int = 0) -> None:
@@ -92,12 +93,12 @@ def stop(status: int = 0) -> None:
         except Exception as e:
             logger.warning(f"停止全局更新定时器时出错: {e}")
     app = QApplication.instance()
+    guard.release()
     if app:
         _reset_signal_handlers()
         app.quit()
 
     _terminate_child_processes()
-    _cleanup_shared_memory()
     logger.debug(f"程序退出({status})")
     if not app:
         os._exit(status)
@@ -717,23 +718,12 @@ class TimeManagerFactory:
 
 
 class SingleInstanceGuard:
-    def __init__(self, lock_name="MyApp.lock", stale_lock_time=0):
+    def __init__(self, lock_name="ClassWidgets.lock"):
         lock_path = QDir.temp().absoluteFilePath(lock_name)
         self.lock_file = QLockFile(lock_path)
-        self.lock_file.setStaleLockTime(stale_lock_time)  # 永不过期（手动处理）
         self.lock_acquired = False
 
-    def is_pid_alive(self, pid):
-        return psutil.pid_exists(pid)
-
-    def clean_stale_lock(self):
-        info = self.get_lock_info()
-        if info and not self.is_pid_alive(info["pid"]):
-            print(f"清理僵尸锁：来自主机 {info['hostname']}，进程 PID {info['pid']}")
-            self.lock_file.removeStaleLockFile()
-
     def try_acquire(self, timeout=100):
-        self.clean_stale_lock()
         self.lock_acquired = self.lock_file.tryLock(timeout)
         return self.lock_acquired
 
