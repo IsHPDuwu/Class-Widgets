@@ -746,4 +746,4 @@ class SingleInstanceGuard:
 tray_icon = None
 update_timer = UnionUpdateTimer()
 time_manager = TimeManagerFactory.get_instance()
-guard:SingleInstanceGuard = None
+guard:Optional[SingleInstanceGuard] = None
