@@ -2205,7 +2205,12 @@ class SettingsMenu(FluentWindow):
             for lang_code, lang_name in available_languages.items():
                 language_combo_view.addItem(lang_name)
                 self.language_map_view[lang_name] = lang_code
-            current_lang = self.i18n_manager.current_language_view
+            language_combo_view.addItem(self.tr('跟随系统'))
+            self.language_map_view[self.tr('跟随系统')] = 'system'
+            if config_center.read_conf('General', 'language_view', 'system') == 'system':
+                current_lang = 'system'
+            else:
+                current_lang = self.i18n_manager.current_language_view
             for i in range(language_combo_view.count()):
                 if self.language_map_view.get(language_combo_view.itemText(i)) == current_lang:
                     language_combo_view.setCurrentIndex(i)
@@ -5121,7 +5126,7 @@ class SettingsMenu(FluentWindow):
                 selected_lang_name = language_combo_view.currentText()
                 selected_lang_code = self.language_map_view.get(selected_lang_name)
                 if selected_lang_code and selected_lang_code != self.i18n_manager.current_language_view:
-                    success = self.i18n_manager.load_language_view(selected_lang_code)
+                    success = self.i18n_manager.load_language_view(selected_lang_code if selected_lang_code != 'system' else QLocale.system().name())
                     if success:
                         config_center.write_conf('General', 'language_view', selected_lang_code)
                         title =self.tr('界面语言切换成功 ♪(´▽｀)')
