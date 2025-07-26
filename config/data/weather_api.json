@@ -3,7 +3,8 @@
     "xiaomi_weather": "https://weatherapi.market.xiaomi.com/wtr-v3/weather/all?latitude=0&longitude=0&locationKey=weathercn:{location_key}&appKey=weather20151024&sign=zUFJoAR2ZVrDy1vF3D07&isGlobal=false&locale=zh_cn&days={days}",
     "qweather": "https://devapi.qweather.com/v7/weather/now?location={location_key}&key={key}",
     "amap_weather": "https://restapi.amap.com/v3/weather/weatherInfo?key={key}&city={location_key}",
-    "qq_weather": "https://apis.map.qq.com/ws/weather/v1?key={key}&adcode={location_key}"
+    "qq_weather": "https://apis.map.qq.com/ws/weather/v1?key={key}&adcode={location_key}",
+    "open_meteo": "https://api.open-meteo.com/v1/forecast?latitude=116.0&longitude=40.0&current=temperature_2m,weather_code&timezone=auto&forecast_days=1"
   },
   "weather_api_parameters": {
     "xiaomi_weather": {
