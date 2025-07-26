@@ -1883,14 +1883,15 @@ class DesktopWidget(QWidget):  # 主要小组件
         elif config_center.read_conf('General', 'pin_on_top') == '2':  # 置底
             # 避免使用WindowStaysOnBottomHint,防止争夺底层
             self.setWindowFlags(
-                Qt.WindowType.FramelessWindowHint |
+                Qt.WindowType.FramelessWindowHint | Qt.WindowType.WindowStaysOnBottomHint |
                 Qt.WindowType.WindowDoesNotAcceptFocus
             )
             if os.name == 'nt':
                 def set_window_pos():
                     hwnd = self.winId().__int__()
                     # 稍高于最底层的值
-                    ctypes.windll.user32.SetWindowPos(hwnd, 2, 0, 0, 0, 0, 0x0214)
+                    ctypes.windll.user32.SetWindowPos(
+                        hwnd, 2, 0, 0, 0, 0, 0x0214)
                 QTimer.singleShot(100, set_window_pos)
             else:
                 QTimer.singleShot(100, self.lower)
