@@ -202,6 +202,8 @@ class WeatherManager:
             provider_class_name = 'XiaomiWeatherProvider'
         elif api_name == 'qweather':
             provider_class_name = 'QWeatherProvider'
+        elif api_name == 'open_meteo':
+            provider_class_name = 'OpenMeteoProvider'
         else:
             provider_class_name = f'{api_name.capitalize()}WeatherProvider'
         if provider_class_name in globals():
@@ -797,15 +799,18 @@ class OpenMeteoProvider(GenericWeatherProvider):
             raise ValueError(f'{self.api_name}: location_key 参数不能为空')
 
         try:
-            loc, lan = location_key.strip(',')
+            lon, lan = location_key.split(',')
         except:
             raise ValueError(f'{self.api_name}: location_key 不为逗号分隔的经纬度模式')
 
         try:
             from network_thread import proxies
-            url = self.base_url.format(loc=loc,lan=lan)
+            url = self.base_url.format(lon=lon,lan=lan)
             #logger.debug(f'{self.api_name} 请求URL: {url}')
-            response = requests.get(url, proxies=proxies, timeout=10)
+            headers = {
+                'User-Agent': 'ClassWidgets/1.1.7.2 (contact: IsHPDuwu@outlook.com)'
+            }
+            response = requests.get(url, proxies=proxies, timeout=10, headers=headers)
             response.raise_for_status()
             return response.json()
         except Exception as e:
@@ -817,8 +822,10 @@ class OpenMeteoProvider(GenericWeatherProvider):
         try:
             current = data.get('current', {})
             temp = current.get('temperature_2m')
+            current_units = data.get('current_units', {})
+            unit = current_units.get('temperature_2m', '°C')
             if temp is not None:
-                return f"{temp}°"
+                return f"{temp}{unit}"
             return None
         except Exception as e:
             logger.error(f"解析 Open-Meteo 温度失败: {e}")
@@ -829,7 +836,7 @@ class OpenMeteoProvider(GenericWeatherProvider):
         try:
             current = data.get('current', {})
             weather_code = current.get('weather_code')
-            if temp is not None:
+            if weather_code is not None:
                 return str(weather_code)
             return None
         except Exception as e:
