@@ -791,6 +791,7 @@ class QQWeatherProvider(GenericWeatherProvider):
         
 
 class OpenMeteoProvider(GenericWeatherProvider):
+    @retry_on_failure(max_retries=2, delay=0.5)
     def fetch_current_weather(self, location_key, api_key):
         if not location_key:
             raise ValueError(f'{self.api_name}: location_key 参数不能为空')
