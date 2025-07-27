@@ -815,11 +815,6 @@ class OpenMeteoProvider(GenericWeatherProvider):
     def parse_temperature(self, data: Dict[str, Any]) -> Optional[str]:
         """解析温度数据(Open-Meteo)"""
         try:
-            # realtime = data.get('result', {}).get('realtime', [])
-            # if realtime and len(realtime) > 0:
-            #     temp = realtime[0].get('infos', {}).get('temp')
-            #     if temp is not None:
-            #         return f"{temp}°"
             current = data.get('current', {})
             temp = current.get('temperature_2m')
             if temp is not None:
