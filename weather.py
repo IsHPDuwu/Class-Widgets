@@ -788,6 +788,28 @@ class QQWeatherProvider(GenericWeatherProvider):
         except Exception as e:
             logger.error(f"解析腾讯天气描述失败: {e}")
             return None
+        
+
+class OpenMeteoProvider(GenericWeatherProvider):
+    def fetch_current_weather(self, location_key, api_key):
+        if not location_key:
+            raise ValueError(f'{self.api_name}: location_key 参数不能为空')
+
+        try:
+            loc, lan = location_key.strip(',')
+        except:
+            raise ValueError(f'{self.api_name}: location_key 不为逗号分隔的经纬度模式')
+
+        try:
+            from network_thread import proxies
+            url = self.base_url.format(loc=loc,lan=lan)
+            #logger.debug(f'{self.api_name} 请求URL: {url}')
+            response = requests.get(url, proxies=proxies, timeout=10)
+            response.raise_for_status()
+            return response.json()
+        except Exception as e:
+            logger.error(f'{self.api_name} 获取天气数据失败: {e}')
+            raise
 
 
 class WeatherDatabase:
