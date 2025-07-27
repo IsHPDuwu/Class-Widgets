@@ -811,6 +811,43 @@ class OpenMeteoProvider(GenericWeatherProvider):
             logger.error(f'{self.api_name} 获取天气数据失败: {e}')
             raise
 
+    def parse_temperature(self, data: Dict[str, Any]) -> Optional[str]:
+        """解析温度数据(Open-Meteo)"""
+        try:
+            # realtime = data.get('result', {}).get('realtime', [])
+            # if realtime and len(realtime) > 0:
+            #     temp = realtime[0].get('infos', {}).get('temp')
+            #     if temp is not None:
+            #         return f"{temp}°"
+            current = data.get('current', {})
+            temp = current.get('temperature_2m')
+            if temp is not None:
+                return f"{temp}°"
+            return None
+        except Exception as e:
+            logger.error(f"解析 Open-Meteo 温度失败: {e}")
+            return None
+    
+    def parse_weather_icon(self, data: Dict[str, Any]) -> Optional[str]:
+        """解析天气图标代码(Open-Meteo)"""
+        try:
+            current = data.get('current', {})
+            weather_code = current.get('weather_code')
+            if temp is not None:
+                return str(weather_code)
+            return None
+        except Exception as e:
+            logger.error(f"解析 Open-Meteo 天气图标失败: {e}")
+            return None
+    
+    def parse_weather_description(self, data: Dict[str, Any]) -> Optional[str]:
+        """解析天气描述(Open-Meteo)"""
+        try:
+            return self.parse_weather_icon(data)
+        except Exception as e:
+            logger.error(f"解析 Open-Meteo 描述失败: {e}")
+            return None
+
 
 class WeatherDatabase:
     """天气数据库管理类"""
