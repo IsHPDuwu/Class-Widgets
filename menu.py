@@ -470,9 +470,9 @@ class selectCity(MessageBoxBase):  # 选择城市
             # 新增按钮
             btn_internet = PushButton(QCoreApplication.translate('menu', '通过互联网获取经纬度'))
             btn_internet.clicked.connect(self.get_coordinates_from_internet)
-            if platform.system() in ['Windows', 'Darwin']:
-                btn_sysapi = PushButton(QCoreApplication.translate('menu', '通过系统获取经纬度'))
-                btn_sysapi.clicked.connect(self.get_coordinates_from_system)
+            # if platform.system() in ['Windows', 'Darwin']:
+            #     btn_sysapi = PushButton(QCoreApplication.translate('menu', '通过系统获取经纬度'))
+            #     btn_sysapi.clicked.connect(self.get_coordinates_from_system)
 
             self.viewLayout.addWidget(title_label)
             self.viewLayout.addWidget(subtitle_label)
@@ -481,8 +481,8 @@ class selectCity(MessageBoxBase):  # 选择城市
             self.viewLayout.addWidget(latitude_label)
             self.viewLayout.addWidget(self.latitude_edit)
             self.viewLayout.addWidget(btn_internet)
-            if platform.system() in ['Windows', 'Darwin']:
-                self.viewLayout.addWidget(btn_sysapi)
+            # if platform.system() in ['Windows', 'Darwin']:
+            #     self.viewLayout.addWidget(btn_sysapi)
             self.widget.setMinimumWidth(400)
             self.widget.setMinimumHeight(250)
 
@@ -552,77 +552,77 @@ class selectCity(MessageBoxBase):  # 选择城市
         self.latitude_edit.setText(str(latitude))
         self.longitude_edit.setText(str(longitude))
 
-    class getCoordinatesSystem(QThread):
-        location_ready = pyqtSignal(float, float)
+    # class getCoordinatesSystem(QThread):
+    #     location_ready = pyqtSignal(float, float)
 
-        def run(self):
-            if platform.system() == 'Windows':
-                loop = asyncio.new_event_loop()
-                asyncio.set_event_loop(loop)
+    #     def run(self):
+    #         if platform.system() == 'Windows':
+    #             loop = asyncio.new_event_loop()
+    #             asyncio.set_event_loop(loop)
 
-                try:
-                    result = loop.run_until_complete(self.get_location_windows())
-                    self.location_ready.emit(*result)
-                except Exception as e:
-                    logger.error(f"获取位置失败: {e}")
-                finally:
-                    loop.close()
-            elif platform.system() == 'Darwin':
-                self.get_location_macos()
+    #             try:
+    #                 result = loop.run_until_complete(self.get_location_windows())
+    #                 self.location_ready.emit(*result)
+    #             except Exception as e:
+    #                 logger.error(f"获取位置失败: {e}")
+    #             finally:
+    #                 loop.close()
+    #         elif platform.system() == 'Darwin':
+    #             self.get_location_macos()
 
 
-        async def get_location_windows(self):
-            if platform.system() != 'Windows':
-                raise ValueError("This method is only for Windows.")
-            from winrt.windows.devices.geolocation import Geolocator
-            geolocator = Geolocator()
-            pos = await geolocator.get_geoposition_async()
-            coord = pos.coordinate.point.position
-            return coord.latitude, coord.longitude
+    #     async def get_location_windows(self):
+    #         if platform.system() != 'Windows':
+    #             raise ValueError("This method is only for Windows.")
+    #         from winrt.windows.devices.geolocation import Geolocator
+    #         geolocator = Geolocator()
+    #         pos = await geolocator.get_geoposition_async()
+    #         coord = pos.coordinate.point.position
+    #         return coord.latitude, coord.longitude
 
-        def get_location_macos(self):
-            if platform.system() != 'Darwin':
-                raise ValueError("This method is only for macOS.")
-            try:
-                from Cocoa import NSObject, NSRunLoop, NSDefaultRunLoopMode
-                from CoreLocation import CLLocationManager, kCLLocationAccuracyBest
-                import time
-                class LocationDelegate(NSObject):
-                    def init(self):
-                        self = super(LocationDelegate, self).init()
-                        if self:
-                            self.location = None
-                        return self
+    #     def get_location_macos(self):
+    #         if platform.system() != 'Darwin':
+    #             raise ValueError("This method is only for macOS.")
+    #         try:
+    #             from Cocoa import NSObject, NSRunLoop, NSDefaultRunLoopMode
+    #             from CoreLocation import CLLocationManager, kCLLocationAccuracyBest
+    #             import time
+    #             class LocationDelegate(NSObject):
+    #                 def init(self):
+    #                     self = super(LocationDelegate, self).init()
+    #                     if self:
+    #                         self.location = None
+    #                     return self
 
-                    def locationManager_didUpdateLocations_(self, manager, locations):
-                        self.location = locations[-1]
-                        manager.stopUpdatingLocation()
+    #                 def locationManager_didUpdateLocations_(self, manager, locations):
+    #                     self.location = locations[-1]
+    #                     manager.stopUpdatingLocation()
 
-                delegate = LocationDelegate.alloc().init()
-                manager = CLLocationManager.alloc().init()
-                manager.setDelegate_(delegate)
-                manager.setDesiredAccuracy_(kCLLocationAccuracyBest)
-                manager.requestWhenInUseAuthorization()
-                manager.startUpdatingLocation()
+    #             delegate = LocationDelegate.alloc().init()
+    #             manager = CLLocationManager.alloc().init()
+    #             manager.setDelegate_(delegate)
+    #             manager.setDesiredAccuracy_(kCLLocationAccuracyBest)
+    #             manager.requestWhenInUseAuthorization()
+    #             manager.startUpdatingLocation()
 
-                timeout = time.time() + 10  # 最多等待10秒
-                while not delegate.location and time.time() < timeout:
-                    NSRunLoop.currentRunLoop().runMode_beforeDate_(
-                        NSDefaultRunLoopMode, time.time() + 0.1
-                    )
+    #             timeout = time.time() + 10  # 最多等待10秒
+    #             while not delegate.location and time.time() < timeout:
+    #                 NSRunLoop.currentRunLoop().runMode_beforeDate_(
+    #                     NSDefaultRunLoopMode, time.time() + 0.1
+    #                 )
 
-                if delegate.location:
-                    coord = delegate.location.coordinate()
-                    return coord.latitude(), coord.longitude()
+    #             if delegate.location:
+    #                 coord = delegate.location.coordinate()
+    #                 return coord.latitude(), coord.longitude()
 
-            except Exception as e:
-                self.location_error.emit(str(e))
+    #         except Exception as e:
+    #             self.location_error.emit(str(e))
     
-    def get_coordinates_from_system(self):
-        """通过系统获取经纬度"""
-        self.coordinates_thread = self.getCoordinatesSystem()
-        self.coordinates_thread.location_ready.connect(self.set_coordinates)
-        self.coordinates_thread.start()
+    # def get_coordinates_from_system(self):
+    #     """通过系统获取经纬度"""
+    #     self.coordinates_thread = self.getCoordinatesSystem()
+    #     self.coordinates_thread.location_ready.connect(self.set_coordinates)
+    #     self.coordinates_thread.start()
 
 
 class licenseDialog(MessageBoxBase):  # 显示软件许可协议
