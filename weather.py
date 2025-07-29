@@ -308,6 +308,9 @@ class WeatherManager:
     def _get_auto_location(self) -> str:
         """自动获取位置"""
         try:
+            method = self.get_current_provider().config['method']
+            if method == 'coordinates':
+                return self._get_coordinates_location()
             from network_thread import getCity
             city_thread = getCity()
             loop = QEventLoop()
@@ -321,6 +324,23 @@ class WeatherManager:
         except Exception as e:
             logger.error(f'自动获取位置失败: {e}')
             return '101010100'
+        
+    def _get_coordinates_location(self) -> str:
+        """获取坐标位置"""
+        try:
+            from network_thread import getCoordinates
+            coordinates_thread = getCoordinates()
+            loop = QEventLoop()
+            coordinates_thread.finished.connect(loop.quit)
+            coordinates_thread.start()
+            loop.exec_()  # 阻塞到完成
+            coordinates_data = config_center.read_conf('Weather', 'city')
+            if coordinates_data and ',' in coordinates_data:
+                return coordinates_data
+            return '116.0,40.0'  # 默认北京
+        except Exception as e:
+            logger.error(f'获取坐标位置失败: {e}')
+            return '116.0,40.0'
 
     def _is_api_key_required(self, api_name: str) -> bool:
         """最神经病的一集"""
