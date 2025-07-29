@@ -34,6 +34,7 @@ from qfluentwidgets import (
 )
 from qfluentwidgets.common import themeColor
 from qfluentwidgets.components.widgets import ListItemDelegate
+from typing import Tuple
 
 from basic_dirs import THEME_HOME
 import conf
@@ -49,7 +50,7 @@ from generate_speech import get_tts_voices
 import generate_speech
 from file import config_center, schedule_center
 import file
-from network_thread import VersionThread, scheduleThread
+from network_thread import VersionThread, scheduleThread, proxies
 from plugin import p_loader
 from plugin_plaza import PluginPlaza
 
@@ -458,20 +459,32 @@ class selectCity(MessageBoxBase):  # 选择城市
             subtitle_label.setText(QCoreApplication.translate('menu','请输入当地的经度和纬度'))
             self.yesButton.setText(QCoreApplication.translate('menu','确定'))
             self.cancelButton.setText(QCoreApplication.translate('menu','取消'))
+
             longitude_label = QLabel(QCoreApplication.translate('menu','经度'))
             latitude_label = QLabel(QCoreApplication.translate('menu','纬度'))
             self.longitude_edit = LineEdit()
             self.latitude_edit = LineEdit()
             self.longitude_edit.setPlaceholderText(QCoreApplication.translate('menu','经度，例如 116.40'))
             self.latitude_edit.setPlaceholderText(QCoreApplication.translate('menu','纬度，例如 39.90'))
+
+            # 新增按钮
+            btn_internet = PushButton(QCoreApplication.translate('menu', '通过互联网获取经纬度'))
+            btn_internet.clicked.connect(self.get_coordinates_from_internet)
+            if platform.system() in ['Windows', 'Darwin']:
+                btn_sysapi = PushButton(QCoreApplication.translate('menu', '通过系统获取经纬度'))
+                btn_sysapi.clicked.connect(self.get_coordinates_from_system)
+
             self.viewLayout.addWidget(title_label)
             self.viewLayout.addWidget(subtitle_label)
             self.viewLayout.addWidget(longitude_label)
             self.viewLayout.addWidget(self.longitude_edit)
             self.viewLayout.addWidget(latitude_label)
             self.viewLayout.addWidget(self.latitude_edit)
+            self.viewLayout.addWidget(btn_internet)
+            if platform.system() in ['Windows', 'Darwin']:
+                self.viewLayout.addWidget(btn_sysapi)
             self.widget.setMinimumWidth(400)
-            self.widget.setMinimumHeight(200)
+            self.widget.setMinimumHeight(250)
 
     def search_city(self):
         if self.method != 'location_key':
@@ -492,6 +505,124 @@ class selectCity(MessageBoxBase):  # 选择城市
             self.city_list.setCurrentItem(item)
             # 聚焦该项
             self.city_list.scrollToItem(item)
+
+    class getCoordinatesInternet(QThread):
+        corrdinates = pyqtSignal(float, float)
+
+        def __init__(self, url: str = 'http://ip-api.com/json/?fields=status,lat,lon'):
+            super().__init__()
+            self.download_url = url
+        
+        def run(self) -> None:
+            try:
+                coordinates_data = self.get_coordinates()
+                if coordinates_data:
+                    self.corrdinates.emit(coordinates_data[0], coordinates_data[1])
+
+            except Exception as e:
+                logger.error(f"获取坐标失败: {e}")
+
+        def get_coordinates(self) -> Tuple[float, float]:
+            import requests
+            try:
+                req = requests.get(self.download_url, proxies=proxies)
+                if req.status_code == 200:
+                    data = req.json()
+                    if data['status'] == 'success':
+                        logger.info(f"获取坐标成功：{data['lat']}, {data['lon']}")
+                        return (data['lat'], data['lon'])
+                    else:
+                        logger.error(f"获取坐标失败：{data['message']}")
+                        raise ValueError(f"获取坐标失败：{data['message']}")
+                else:
+                    logger.error(f"获取坐标失败：{req.status_code}")
+                    raise ValueError(f"获取坐标失败：{req.status_code}")
+            except Exception as e:
+                logger.error(f"获取坐标失败：{e}")
+                raise ValueError(f"获取坐标失败：{e}")
+
+    def get_coordinates_from_internet(self):
+        """通过网络获取经纬度"""
+        self.coordinates_thread = self.getCoordinatesInternet()
+        self.coordinates_thread.corrdinates.connect(self.set_coordinates)
+        self.coordinates_thread.start()
+
+    def set_coordinates(self, latitude, longitude):
+        """设置经纬度到输入框"""
+        self.latitude_edit.setText(str(latitude))
+        self.longitude_edit.setText(str(longitude))
+
+    class getCoordinatesSystem(QThread):
+        location_ready = pyqtSignal(float, float)
+
+        def run(self):
+            if platform.system() == 'Windows':
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+
+                try:
+                    result = loop.run_until_complete(self.get_location_windows())
+                    self.location_ready.emit(*result)
+                except Exception as e:
+                    logger.error(f"获取位置失败: {e}")
+                finally:
+                    loop.close()
+            elif platform.system() == 'Darwin':
+                self.get_location_macos()
+
+
+        async def get_location_windows(self):
+            if platform.system() != 'Windows':
+                raise ValueError("This method is only for Windows.")
+            from winrt.windows.devices.geolocation import Geolocator
+            geolocator = Geolocator()
+            pos = await geolocator.get_geoposition_async()
+            coord = pos.coordinate.point.position
+            return coord.latitude, coord.longitude
+
+        def get_location_macos(self):
+            if platform.system() != 'Darwin':
+                raise ValueError("This method is only for macOS.")
+            try:
+                from Cocoa import NSObject, NSRunLoop, NSDefaultRunLoopMode
+                from CoreLocation import CLLocationManager, kCLLocationAccuracyBest
+                import time
+                class LocationDelegate(NSObject):
+                    def init(self):
+                        self = super(LocationDelegate, self).init()
+                        if self:
+                            self.location = None
+                        return self
+
+                    def locationManager_didUpdateLocations_(self, manager, locations):
+                        self.location = locations[-1]
+                        manager.stopUpdatingLocation()
+
+                delegate = LocationDelegate.alloc().init()
+                manager = CLLocationManager.alloc().init()
+                manager.setDelegate_(delegate)
+                manager.setDesiredAccuracy_(kCLLocationAccuracyBest)
+                manager.requestWhenInUseAuthorization()
+                manager.startUpdatingLocation()
+
+                timeout = time.time() + 10  # 最多等待10秒
+                while not delegate.location and time.time() < timeout:
+                    NSRunLoop.currentRunLoop().runMode_beforeDate_(
+                        NSDefaultRunLoopMode, time.time() + 0.1
+                    )
+
+                if delegate.location:
+                    coord = delegate.location.coordinate()
+                    return coord.latitude(), coord.longitude()
+
+            except Exception as e:
+                self.location_error.emit(str(e))
+    
+    def get_coordinates_from_system(self):
+        """通过系统获取经纬度"""
+        self.coordinates_thread = self.getCoordinatesSystem()
+        self.coordinates_thread.location_ready.connect(self.set_coordinates)
+        self.coordinates_thread.start()
 
 
 class licenseDialog(MessageBoxBase):  # 显示软件许可协议
