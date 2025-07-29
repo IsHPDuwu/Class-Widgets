@@ -799,13 +799,13 @@ class OpenMeteoProvider(GenericWeatherProvider):
             raise ValueError(f'{self.api_name}: location_key 参数不能为空')
 
         try:
-            lon, lan = location_key.split(',')
+            lon, lat = location_key.split(',')
         except:
             raise ValueError(f'{self.api_name}: location_key 不为逗号分隔的经纬度模式')
 
         try:
             from network_thread import proxies
-            url = self.base_url.format(lon=lon,lan=lan)
+            url = self.base_url.format(lon=lon,lat=lat)
             #logger.debug(f'{self.api_name} 请求URL: {url}')
             headers = {
                 'User-Agent': 'ClassWidgets/1.1.7.2 (contact: IsHPDuwu@outlook.com)'
