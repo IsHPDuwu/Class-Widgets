@@ -429,39 +429,60 @@ def cd_load_item():
 
 
 class selectCity(MessageBoxBase):  # 选择城市
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, method='location_key'):
         super().__init__(parent)
         title_label = SubtitleLabel()
         subtitle_label = BodyLabel()
-        self.search_edit = SearchLineEdit()
+        self.method = method
 
-        title_label.setText(QCoreApplication.translate('menu','搜索城市'))
-        subtitle_label.setText(QCoreApplication.translate('menu','请输入当地城市名进行搜索'))
-        self.yesButton.setText(QCoreApplication.translate('menu','选择此城市'))  # 按钮组件汉化
-        self.cancelButton.setText(QCoreApplication.translate('menu','取消'))
-
-        self.search_edit.setPlaceholderText(QCoreApplication.translate('menu','输入城市名'))
-        self.search_edit.setClearButtonEnabled(True)
-        self.search_edit.textChanged.connect(self.search_city)
-
-        self.city_list = ListWidget()
-        self.city_list.addItems(wd.search_by_name(''))
-        self.get_selected_city()
-
-        # 将组件添加到布局中
-        self.viewLayout.addWidget(title_label)
-        self.viewLayout.addWidget(subtitle_label)
-        self.viewLayout.addWidget(self.search_edit)
-        self.viewLayout.addWidget(self.city_list)
-        self.widget.setMinimumWidth(500)
-        self.widget.setMinimumHeight(600)
+        if method == 'location_key':
+            self.search_edit = SearchLineEdit()
+            title_label.setText(QCoreApplication.translate('menu','搜索城市'))
+            subtitle_label.setText(QCoreApplication.translate('menu','请输入当地城市名进行搜索'))
+            self.yesButton.setText(QCoreApplication.translate('menu','选择此城市'))
+            self.cancelButton.setText(QCoreApplication.translate('menu','取消'))
+            self.search_edit.setPlaceholderText(QCoreApplication.translate('menu','输入城市名'))
+            self.search_edit.setClearButtonEnabled(True)
+            self.search_edit.textChanged.connect(self.search_city)
+            self.city_list = ListWidget()
+            self.city_list.addItems(wd.search_by_name(''))
+            self.get_selected_city()
+            self.viewLayout.addWidget(title_label)
+            self.viewLayout.addWidget(subtitle_label)
+            self.viewLayout.addWidget(self.search_edit)
+            self.viewLayout.addWidget(self.city_list)
+            self.widget.setMinimumWidth(500)
+            self.widget.setMinimumHeight(600)
+        else:
+            title_label.setText(QCoreApplication.translate('menu','手动输入经纬度'))
+            subtitle_label.setText(QCoreApplication.translate('menu','请输入当地的经度和纬度'))
+            self.yesButton.setText(QCoreApplication.translate('menu','确定'))
+            self.cancelButton.setText(QCoreApplication.translate('menu','取消'))
+            longitude_label = QLabel(QCoreApplication.translate('menu','经度'))
+            latitude_label = QLabel(QCoreApplication.translate('menu','纬度'))
+            self.longitude_edit = LineEdit()
+            self.latitude_edit = LineEdit()
+            self.longitude_edit.setPlaceholderText(QCoreApplication.translate('menu','经度，例如 116.40'))
+            self.latitude_edit.setPlaceholderText(QCoreApplication.translate('menu','纬度，例如 39.90'))
+            self.viewLayout.addWidget(title_label)
+            self.viewLayout.addWidget(subtitle_label)
+            self.viewLayout.addWidget(longitude_label)
+            self.viewLayout.addWidget(self.longitude_edit)
+            self.viewLayout.addWidget(latitude_label)
+            self.viewLayout.addWidget(self.latitude_edit)
+            self.widget.setMinimumWidth(400)
+            self.widget.setMinimumHeight(200)
 
     def search_city(self):
+        if self.method != 'location_key':
+            raise ValueError("Method must be 'location_key' for city search.")
         self.city_list.clear()
         self.city_list.addItems(wd.search_by_name(self.search_edit.text()))
         self.city_list.clearSelection()  # 清除选中项
 
     def get_selected_city(self):
+        if self.method != 'location_key':
+            raise ValueError("Method must be 'location_key' for city search.")
         selected_city = self.city_list.findItems(
             wd.search_by_num(str(config_center.read_conf('Weather', 'city'))), QtCore.Qt.MatchFlag.MatchExactly
         )
@@ -3112,11 +3133,29 @@ class SettingsMenu(FluentWindow):
         config_center.write_conf('Audio', 'volume', str(slider_volume.value()))
 
     def show_search_city(self):
-        search_city_dialog = selectCity(self)
+        method = wd.weather_manager.get_current_provider().config["method"]
+        search_city_dialog = selectCity(self, method=method)
         if search_city_dialog.exec():
-            selected_city = search_city_dialog.city_list.selectedItems()
-            if selected_city:
-                config_center.write_conf('Weather', 'city', wd.search_code_by_name((selected_city[0].text(),'')))
+            if method == 'location_key':
+                selected_city = search_city_dialog.city_list.selectedItems()
+                if selected_city:
+                    config_center.write_conf('Weather', 'city', wd.search_code_by_name((selected_city[0].text(),'')))
+            else:
+                lon = search_city_dialog.longitude_edit.text()
+                lat = search_city_dialog.latitude_edit.text()
+                if lon and lat:
+                    try:
+                        config_center.write_conf('Weather', 'city', f"{float(lon)},{float(lat)}")
+                    except ValueError:
+                        Flyout.create(
+                            icon=InfoBarIcon.ERROR,
+                            title=self.tr('无效的经纬度'),
+                            content=self.tr("请输入有效的经度和纬度值。"),
+                            target=search_city_dialog,
+                            parent=self,
+                            isClosable=True,
+                            aniType=FlyoutAnimationType.PULL_UP
+                        )
 
     def show_license(self):
         license_dialog = licenseDialog(self)

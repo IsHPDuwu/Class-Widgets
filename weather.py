@@ -193,7 +193,8 @@ class WeatherManager:
             'parameters': api_params,
             'alerts': api_params.get('alerts', {}),
             'database': api_params.get('database', 'xiaomi_weather.db'),
-            'return_desc': api_params.get('return_desc', False)
+            'return_desc': api_params.get('return_desc', False),
+            'method': api_params.get('method', 'location_key')
         }
 
     def _get_provider_class(self, api_name: str) -> Type[WeatherapiProvider]:
@@ -949,6 +950,8 @@ class WeatherDatabase:
         return None
 
     def search_city_by_code(self, city_code: str) -> str:
+        if len(city_code.split(',')) != 1:
+            return 'coordinates'
         """根据城市代码获取城市名称"""
         self._update_db_path()
         try:
