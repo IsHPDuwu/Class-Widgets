@@ -2220,9 +2220,10 @@ class SettingsMenu(FluentWindow):
             config_center.read_conf('Weather', 'api')
         ))
         select_weather_api.currentIndexChanged.connect(
-            lambda: config_center.write_conf('Weather', 'api',
+            lambda:( config_center.write_conf('Weather', 'api',
                                              weather.weather_manager.api_config['weather_api_list'][
-                                                 select_weather_api.currentIndex()])
+                                                 select_weather_api.currentIndex()]), 
+                          config_center.write_conf('Weather', 'city', '0'))
         )
 
         api_key_edit = self.findChild(LineEdit, 'api_key_edit')  # API密钥
