@@ -468,8 +468,8 @@ class selectCity(MessageBoxBase):  # 选择城市
             self.latitude_edit.setPlaceholderText(QCoreApplication.translate('menu','纬度，例如 39.90'))
 
             # 新增按钮
-            btn_internet = PushButton(QCoreApplication.translate('menu', '通过互联网获取经纬度'))
-            btn_internet.clicked.connect(self.get_coordinates_from_internet)
+            self.btn_internet = PushButton(QCoreApplication.translate('menu', '通过互联网获取经纬度'))
+            self.btn_internet.clicked.connect(self.get_coordinates_from_internet)
             # if platform.system() in ['Windows', 'Darwin']:
             #     btn_sysapi = PushButton(QCoreApplication.translate('menu', '通过系统获取经纬度'))
             #     btn_sysapi.clicked.connect(self.get_coordinates_from_system)
@@ -480,7 +480,7 @@ class selectCity(MessageBoxBase):  # 选择城市
             self.viewLayout.addWidget(self.longitude_edit)
             self.viewLayout.addWidget(latitude_label)
             self.viewLayout.addWidget(self.latitude_edit)
-            self.viewLayout.addWidget(btn_internet)
+            self.viewLayout.addWidget(self.btn_internet)
             # if platform.system() in ['Windows', 'Darwin']:
             #     self.viewLayout.addWidget(btn_sysapi)
             self.widget.setMinimumWidth(400)
@@ -506,8 +506,35 @@ class selectCity(MessageBoxBase):  # 选择城市
             # 聚焦该项
             self.city_list.scrollToItem(item)
 
+    def _lock_input(self):
+        """锁定输入框"""
+        self.longitude_edit.setReadOnly(True)
+        self.latitude_edit.setReadOnly(True)
+        self.btn_internet.setEnabled(False)
+
+    def _unlock_input(self):
+        """解锁输入框"""
+        self.longitude_edit.setReadOnly(False)
+        self.latitude_edit.setReadOnly(False)
+        self.btn_internet.setEnabled(True)
+
+    def _catch_error(self, error_message: str):
+        """处理错误"""
+        self._unlock_input()
+        Flyout.create(
+            icon=InfoBarIcon.ERROR,
+            title=self.tr("经纬度获取失败"),
+            content=f"{error_message}",
+            target=self.btn_internet,
+            parent=self,
+            isClosable=True,
+            aniType=FlyoutAnimationType.PULL_UP,  
+        )
+        logger.error(f"获取经纬度失败: {error_message}")
+
     class getCoordinatesInternet(QThread):
         corrdinates = pyqtSignal(float, float)
+        error = pyqtSignal(str)
 
         def __init__(self, url: str = 'http://ip-api.com/json/?fields=status,lat,lon'):
             super().__init__()
@@ -521,6 +548,7 @@ class selectCity(MessageBoxBase):  # 选择城市
 
             except Exception as e:
                 logger.error(f"获取坐标失败: {e}")
+                self.error.emit(str(e))
 
         def get_coordinates(self) -> Tuple[float, float]:
             import requests
@@ -543,12 +571,15 @@ class selectCity(MessageBoxBase):  # 选择城市
 
     def get_coordinates_from_internet(self):
         """通过网络获取经纬度"""
+        self._lock_input()
         self.coordinates_thread = self.getCoordinatesInternet()
         self.coordinates_thread.corrdinates.connect(self.set_coordinates)
+        self.coordinates_thread.error.connect(self._catch_error)
         self.coordinates_thread.start()
 
     def set_coordinates(self, latitude, longitude):
         """设置经纬度到输入框"""
+        self._unlock_input()
         self.latitude_edit.setText(str(latitude))
         self.longitude_edit.setText(str(longitude))
 
@@ -4066,8 +4097,7 @@ class SettingsMenu(FluentWindow):
             target=target,
             parent=self,
             isClosable=True,
-            aniType=aniType,
-            
+            aniType=aniType,  
         )
 
     # 上传课表到列表组件
