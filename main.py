@@ -28,6 +28,7 @@ from qfluentwidgets import Theme, setTheme, setThemeColor, SystemTrayMenu, Actio
 from PyQt5.QtGui import QCloseEvent, QShowEvent, QHideEvent, QMouseEvent, QFocusEvent
 from PyQt5.QtCore import QCoreApplication
 
+from i18n_manager import I18nManager, global_i18n_manager
 import conf
 import list_
 import tip_toast
@@ -38,7 +39,7 @@ import weather as db
 from conf import base_directory, load_theme_config
 from extra_menu import ExtraMenu, open_settings
 from generate_speech import generate_speech_sync, list_pyttsx3_voices
-from menu import open_plaza, I18nManager
+from menu import open_plaza
 from weather import WeatherReportThread as weatherReportThread
 from weather import get_unified_weather_alerts, get_alert_image
 from network_thread import check_update
@@ -3009,9 +3010,6 @@ if __name__ == '__main__':
 
     app = QApplication(sys.argv)
     app.setQuitOnLastWindowClosed(False)
-
-    global_i18n_manager = I18nManager()
-    global_i18n_manager.init_from_config()
     
     logger.debug(f"i18n加载,界面: {global_i18n_manager.get_current_language_view_name()},组件: {global_i18n_manager.get_current_language_widgets_name()}")
     menu.global_i18n_manager = global_i18n_manager
