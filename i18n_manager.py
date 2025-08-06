@@ -5,6 +5,7 @@ from PyQt5.QtWidgets import QApplication
 import os
 from pathlib import Path
 from loguru import logger
+import sys
 
 import utils
 from file import config_center
@@ -167,6 +168,10 @@ class I18nManager:
                 app.installTranslator(translator_qfw)
                 logger.success(f"成功加载 FluentWidgets 语言: {lang_code}")
 
+            import list_
+            import importlib
+            importlib.reload(list_)
+
             if not utils.main_mgr is None:
                 utils.main_mgr.clear_widgets()
             
@@ -238,6 +243,7 @@ class I18nManager:
             saved_language_view = config_center.read_conf('General', 'language_view', 'system')
             if saved_language_view == 'system':
                 saved_language_view = QLocale.system().name()
+            logger.debug(f"从配置加载界面语言: {saved_language_view}")
             if saved_language_view in self.get_available_languages_view():
                 self.load_language_view(saved_language_view)
             else:
@@ -247,6 +253,6 @@ class I18nManager:
             logger.error(f"从配置初始化语言时出错: {e}")
             self.load_language_view('zh_CN')
 
-
+app = QApplication(sys.argv)
 global_i18n_manager = I18nManager()
 global_i18n_manager.init_from_config()
