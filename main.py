@@ -29,7 +29,7 @@ from qfluentwidgets import Theme, setTheme, setThemeColor, SystemTrayMenu, Actio
 from PyQt5.QtGui import QCloseEvent, QShowEvent, QHideEvent, QMouseEvent, QFocusEvent
 from PyQt5.QtCore import QCoreApplication
 
-from i18n_manager import I18nManager, global_i18n_manager, app
+from i18n_manager import global_i18n_manager, app
 import conf
 import list_
 import tip_toast
