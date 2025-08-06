@@ -214,11 +214,6 @@ class ExtraMenu(FluentWindow):
 
 
 if __name__ == '__main__':
-    # 适配高DPI缩放
-    QApplication.setHighDpiScaleFactorRoundingPolicy(
-        Qt.HighDpiScaleFactorRoundingPolicy.PassThrough)
-    QApplication.setAttribute(Qt.AA_EnableHighDpiScaling)
-    QApplication.setAttribute(Qt.AA_UseHighDpiPixmaps)
     app = QApplication(sys.argv)
     ex = ExtraMenu()
     ex.show()

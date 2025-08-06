@@ -857,11 +857,6 @@ def load_local_plugins_version() -> None:
 
 
 if __name__ == '__main__':
-    # 适配高DPI缩放
-    QApplication.setHighDpiScaleFactorRoundingPolicy(
-        Qt.HighDpiScaleFactorRoundingPolicy.PassThrough)
-    QApplication.setAttribute(Qt.AA_EnableHighDpiScaling)
-    QApplication.setAttribute(Qt.AA_UseHighDpiPixmaps)
     app = QApplication(sys.argv)
     pp = PluginPlaza()
     pp.show()
