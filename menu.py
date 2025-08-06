@@ -4645,7 +4645,11 @@ def sp_get_class_num():  # 获取当前周课程数（未完成）
 
 
 if __name__ == '__main__':
-    
+    # 适配高DPI缩放
+    QApplication.setHighDpiScaleFactorRoundingPolicy(
+        Qt.HighDpiScaleFactorRoundingPolicy.PassThrough)
+    QApplication.setAttribute(Qt.AA_EnableHighDpiScaling)
+    QApplication.setAttribute(Qt.AA_UseHighDpiPixmaps)
     app = QApplication(sys.argv)
     settings = SettingsMenu()
     settings.show()

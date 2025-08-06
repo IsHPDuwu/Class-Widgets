@@ -501,6 +501,11 @@ def push_notification(state: int = 1, lesson_name: str = '', title: Optional[str
 
 
 if __name__ == '__main__':
+    # 适配高DPI缩放
+    QApplication.setHighDpiScaleFactorRoundingPolicy(
+        Qt.HighDpiScaleFactorRoundingPolicy.PassThrough)
+    QApplication.setAttribute(Qt.AA_EnableHighDpiScaling)
+    QApplication.setAttribute(Qt.AA_UseHighDpiPixmaps)
     app = QApplication(sys.argv)
     main(
         state=4,  # 自定义通知
