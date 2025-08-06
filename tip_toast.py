@@ -17,12 +17,6 @@ from play_audio import PlayAudio
 from generate_speech import get_tts_service
 
 
-# 适配高DPI缩放
-QApplication.setHighDpiScaleFactorRoundingPolicy(
-    Qt.HighDpiScaleFactorRoundingPolicy.PassThrough)
-QApplication.setAttribute(Qt.AA_EnableHighDpiScaling)
-QApplication.setAttribute(Qt.AA_UseHighDpiPixmaps)
-
 prepare_class = config_center.read_conf('Audio', 'prepare_class')
 attend_class = config_center.read_conf('Audio', 'attend_class')
 finish_class = config_center.read_conf('Audio', 'finish_class')
