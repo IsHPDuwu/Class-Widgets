@@ -214,7 +214,7 @@ class ExtraMenu(FluentWindow):
 
 
 if __name__ == '__main__':
-    app = QApplication(sys.argv)
+    from i18n_manager import app
     ex = ExtraMenu()
     ex.show()
     sys.exit(app.exec())

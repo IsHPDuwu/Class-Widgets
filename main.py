@@ -29,12 +29,6 @@ from qfluentwidgets import Theme, setTheme, setThemeColor, SystemTrayMenu, Actio
 from PyQt5.QtGui import QCloseEvent, QShowEvent, QHideEvent, QMouseEvent, QFocusEvent
 from PyQt5.QtCore import QCoreApplication
 
-# 适配高DPI缩放
-QApplication.setHighDpiScaleFactorRoundingPolicy(
-    Qt.HighDpiScaleFactorRoundingPolicy.PassThrough)
-QApplication.setAttribute(Qt.AA_EnableHighDpiScaling)
-QApplication.setAttribute(Qt.AA_UseHighDpiPixmaps)
-
 from i18n_manager import I18nManager, global_i18n_manager, app
 import conf
 import list_

@@ -1,5 +1,5 @@
 from qfluentwidgets import FluentTranslator
-from PyQt5.QtCore import QLocale, QTranslator
+from PyQt5.QtCore import QLocale, QTranslator, Qt
 from PyQt5.QtWidgets import QApplication
 
 import os
@@ -252,6 +252,12 @@ class I18nManager:
         except Exception as e:
             logger.error(f"从配置初始化语言时出错: {e}")
             self.load_language_view('zh_CN')
+
+# 适配高DPI缩放
+QApplication.setHighDpiScaleFactorRoundingPolicy(
+    Qt.HighDpiScaleFactorRoundingPolicy.PassThrough)
+QApplication.setAttribute(Qt.AA_EnableHighDpiScaling)
+QApplication.setAttribute(Qt.AA_UseHighDpiPixmaps)
 
 app = QApplication(sys.argv)
 global_i18n_manager = I18nManager()

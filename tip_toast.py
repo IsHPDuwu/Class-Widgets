@@ -501,7 +501,7 @@ def push_notification(state: int = 1, lesson_name: str = '', title: Optional[str
 
 
 if __name__ == '__main__':
-    app = QApplication(sys.argv)
+    from i18n_manager import app
     main(
         state=4,  # 自定义通知
         title='天气预报',

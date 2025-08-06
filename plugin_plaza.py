@@ -857,7 +857,7 @@ def load_local_plugins_version() -> None:
 
 
 if __name__ == '__main__':
-    app = QApplication(sys.argv)
+    from i18n_manager import app
     pp = PluginPlaza()
     pp.show()
     sys.exit(app.exec())

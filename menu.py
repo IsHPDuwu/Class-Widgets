@@ -4645,8 +4645,7 @@ def sp_get_class_num():  # 获取当前周课程数（未完成）
 
 
 if __name__ == '__main__':
-    
-    app = QApplication(sys.argv)
+    from i18n_manager import app
     settings = SettingsMenu()
     settings.show()
     # settings.setMicaEffectEnabled(True)
