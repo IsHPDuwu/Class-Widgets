@@ -697,7 +697,7 @@ requires-dist = [
     { name = "configparser", specifier = "~=7.1.0" },
     { name = "darkdetect", specifier = "==0.8.0" },
     { name = "distro", marker = "sys_platform == 'linux'", specifier = "~=1.9.0" },
-    { name = "edge-tts", specifier = "==7.2.1" },
+    { name = "edge-tts", specifier = "~=7.2.7" },
     { name = "loguru", specifier = "~=0.7.2" },
     { name = "ntplib", specifier = "~=0.4.0" },
     { name = "packaging", specifier = ">=25.0" },
@@ -708,7 +708,7 @@ requires-dist = [
     { name = "pydantic", specifier = "~=2.10.6" },
     { name = "pygame", specifier = "~=2.6.1" },
     { name = "pygetwindow", specifier = "~=0.0.9" },
-    { name = "pyqt-fluent-widgets", specifier = "~=1.10.5" },
+    { name = "pyqt-fluent-widgets", specifier = "~=1.11.0" },
     { name = "pyqt5", specifier = "~=5.15.11" },
     { name = "pyqt5-qt5" },
     { name = "pyqt5-qt5", marker = "sys_platform == 'win32'", specifier = "==5.15.2" },
@@ -790,7 +790,7 @@ wheels = [
 
 [[package]]
 name = "edge-tts"
-version = "7.2.1"
+version = "7.2.7"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "aiohttp", version = "3.10.11", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.9'" },
@@ -800,9 +800,9 @@ dependencies = [
     { name = "typing-extensions", version = "4.13.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.9'" },
     { name = "typing-extensions", version = "4.15.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.9'" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/fe/82/10c6ac59f401daab2bc47f1369125c80acd19a0e70c75c483c796f23cf10/edge_tts-7.2.1.tar.gz", hash = "sha256:475dc80017699500b32753f3cb8edc7bd76265a41fd5d72e68ec8eb253c7e25b", size = 27280, upload-time = "2025-08-20T14:29:04.012Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/16/d2/1ce38f6e4fe7275207f4033b0971db489a0b594340ae6bac2320127e71ee/edge_tts-7.2.7.tar.gz", hash = "sha256:0127fba57a742bc48ff0a2a3b24b8324f7859260185274c335b4e54735aff325", size = 27508, upload-time = "2025-12-12T20:54:28.403Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/9d/19/8899a54d0018e239199f17d184766c0168ab55b645c27297751535e9d7a1/edge_tts-7.2.1-py3-none-any.whl", hash = "sha256:ac00e60b67588299021d521881ed4ad9abd060705bb2fcdc32e72ed7f45e4247", size = 30380, upload-time = "2025-08-20T14:29:01.618Z" },
+    { url = "https://files.pythonhosted.org/packages/bf/89/92ac6b154ab87d236c15e5e0c73cb99be58efb1ea3eb9318c266bf9a36bf/edge_tts-7.2.7-py3-none-any.whl", hash = "sha256:ac11d9e834347e5ee62cbe72e8a56ffd65d3c4e795be14b1e593b72cf6480dd9", size = 30556, upload-time = "2025-12-12T20:54:26.956Z" },
 ]
 
 [[package]]
@@ -11931,16 +11931,16 @@ wheels = [
 
 [[package]]
 name = "pyqt-fluent-widgets"
-version = "1.10.5"
+version = "1.11.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "darkdetect" },
     { name = "pyqt5" },
     { name = "pyqt5-frameless-window" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/c2/27/eccea122757ac304676c4c5e97e63c183e386f1f61e2d6fce54cf08c0220/pyqt_fluent_widgets-1.10.5.tar.gz", hash = "sha256:bf9ada434e0fcd51099aa5f65e1fbed826f63dd65745ccf3554531b457ab6dbd", size = 1594749, upload-time = "2025-12-21T08:06:53.314Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/72/a8/c83b012ff3bc37e3d97de52d915bb90dc6607437ba29e91a9847ee01a29b/pyqt_fluent_widgets-1.11.0.tar.gz", hash = "sha256:a5f24c5f38f1610b653d106609748ae70c3215f5ff47e3e661291b810cee4405", size = 1599530, upload-time = "2026-01-18T09:17:25.884Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/84/ed/ac4984803f7ec0ed8cf887839aa6866e2b7d54b954c9635de4d35fbbb1a1/pyqt_fluent_widgets-1.10.5-py3-none-any.whl", hash = "sha256:f712f4038f13add9030e61fd5f3bdd44ea1a75c97876997910ec92941d429c61", size = 1751842, upload-time = "2025-12-21T08:06:50.802Z" },
+    { url = "https://files.pythonhosted.org/packages/1a/0f/651e5be39c35526d86eb2b6b804270111345b56e9fa94a01e440047f587f/pyqt_fluent_widgets-1.11.0-py3-none-any.whl", hash = "sha256:8ee7efbc92c0575eb7dc156df704a6c9a7e85f20de1ca7e0095c054466bbf3a5", size = 1755654, upload-time = "2026-01-18T09:17:23.882Z" },
 ]
 
 [[package]]
